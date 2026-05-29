@@ -1,0 +1,190 @@
+{
+  "settings": {
+    "birthdayModeActive": false,
+    "luxineMood": "Glowing",
+    "luxineMoodEmoji": "✨"
+  },
+  "media": [
+    {
+      "id": "m1",
+      "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBsHtjDvdQlKFDGmCz9W559kVECuia8AJXItrKx-p7m0f1Zy-oAIfas4nAi6nubtSBZCqzWn-_Fc4C8fRBSJVSSvhhpVBZFQGeWqa3vLuSjOmLkYhhtCNMREEdpyFWEHyPUMOLHcL5TYM1ukM4WymKwu2t5402s8bZ-KjTYtTKKpUALLBMHz4WuiWxSFlUEUj_F_jiuEHoCL7_uDSF1DeHSpyKecIgmK_yWO-6NJpHQ7cFdGUH8gZOVejW8QTJTrJR-FfXnTMlScwHN",
+      "type": "photo",
+      "caption": "A moment in Milan.",
+      "tags": ["Milan", "Editorial", "Fashion"],
+      "isFavourite": true,
+      "likesCount": 1200,
+      "commentsCount": 48,
+      "createdAt": "2026-05-28T14:32:00Z"
+    },
+    {
+      "id": "m2",
+      "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCFzz5EF2LQ-DwYzPVtBU8h5AKypimSizhjiwSc3DmQydQLkhMVqVzOlCPB8KmdpdIw9ogmCigfFzUt9s9PhERwMMeBrU8SF1bPk5aGokSveM4af-rUIHHEaryfuPjQe3CVs3c3b-CiP3m-RiMnNe4PLZF0AWsCncvKObwXuvq9aghjeqHyY9RBOG6aQCt5mzQ7aOAfu1HCYnsmvCHc4BTdn93PpnqZgsinpT0a0mnt_uaZOZEnUYmSngH98PLf9AqE7VFpw9W7pPLg",
+      "type": "video",
+      "caption": "Studio sessions.",
+      "tags": ["Abstract", "Atmospheric", "Art"],
+      "isFavourite": false,
+      "likesCount": 856,
+      "commentsCount": 12,
+      "createdAt": "2026-05-27T10:15:00Z"
+    },
+    {
+      "id": "m3",
+      "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBi7uzVsM2GMFLgnHUDyyyCkty6zl4NoPg2ZteonrYszzLw3500hQss9b6SCVJSsfIWHVAiy3kn9a1MlvhASHgl8nwBlqJdLuKVbG8Tk1LFouwDptyyNN4_WgRTjfCUx8nmO2YbnNMxYw3eeKysfSoxjSFU19QYbrBEIYOjVzQ7XRDDCO8CC9k_rRWqZmBST1w3hWIMUV9kBZrxrgXKbIy134jMsc1E5AlrYXVQpleOCkGoydiEyK-DUtuUBtyWCh6I86T21G1YBgJi",
+      "type": "photo",
+      "caption": "Signature scent.",
+      "tags": ["Product", "Minimal", "Marble"],
+      "isFavourite": true,
+      "likesCount": 2100,
+      "commentsCount": 150,
+      "createdAt": "2026-05-26T18:45:00Z"
+    }
+  ],
+  "mediaComments": [
+    {
+      "id": "c1",
+      "mediaId": "m1",
+      "authorName": "Iriza",
+      "content": "One of my absolute favorite shots from the collection.",
+      "likesCount": 15,
+      "createdAt": "2026-05-28T15:00:00Z"
+    }
+  ],
+  "mediaLikes": [],
+  "messages": [
+    {
+      "id": "msg1",
+      "authorName": "Eleanor Vance",
+      "content": "There is a certain gravity to the way you curate the world around you. Walking through your space feels less like observation and more like being enveloped in a carefully orchestrated dream. The red, the white, the shadows—it's all perfectly you. Keep shining, Luxine.",
+      "isSpecial": true,
+      "isPinned": true,
+      "likesCount": 1200,
+      "createdAt": "2026-05-29T07:49:00Z"
+    },
+    {
+      "id": "msg2",
+      "authorName": "Julian",
+      "content": "I left the city just to see the sky you mentioned. It was exactly as dramatic as you promised. Waiting for the next chapter.",
+      "isSpecial": true,
+      "isPinned": false,
+      "likesCount": 842,
+      "createdAt": "2026-05-29T04:49:00Z"
+    },
+    {
+      "id": "msg3",
+      "authorName": "Marcus L.",
+      "content": "The aesthetic of your latest post was absolutely devastating. I haven't been able to stop thinking about the composition.",
+      "isSpecial": false,
+      "isPinned": false,
+      "likesCount": 156,
+      "createdAt": "2026-05-28T09:00:00Z"
+    },
+    {
+      "id": "msg4",
+      "authorName": "Sophia",
+      "content": "Forever inspired by the shadows you cast.",
+      "isSpecial": false,
+      "isPinned": false,
+      "likesCount": 32,
+      "createdAt": "2026-10-12T12:00:00Z"
+    },
+    {
+      "id": "msg5",
+      "authorName": "Anonymous",
+      "content": "Just dropping by to leave a bit of love in this beautifully curated space.",
+      "isSpecial": false,
+      "isPinned": false,
+      "likesCount": 8,
+      "createdAt": "2026-10-10T09:00:00Z"
+    }
+  ],
+  "messageLikes": [],
+  "events": [
+    {
+      "id": "ev1",
+      "title": "Vogue Editorial Shoot",
+      "description": "Location: Studio 54, Manhattan",
+      "date": "2026-10-10",
+      "time": "10:00",
+      "type": "appointment",
+      "color": "primary",
+      "completed": false
+    },
+    {
+      "id": "ev2",
+      "title": "Gala Fitting",
+      "description": "Location: Milan Boutique",
+      "date": "2026-10-10",
+      "time": "14:30",
+      "type": "special",
+      "color": "secondary",
+      "completed": false
+    },
+    {
+      "id": "ev3",
+      "title": "Dinner with M.",
+      "description": "Reservation: Le Bernardin",
+      "date": "2026-10-10",
+      "time": "20:00",
+      "type": "dream",
+      "color": "tertiary",
+      "completed": false
+    },
+    {
+      "id": "ev4",
+      "title": "Iriza's Golden Celebration",
+      "description": "Birthday entry points initialized. Today the world celebrating her.",
+      "date": "2026-05-30",
+      "time": "00:00",
+      "type": "birthday",
+      "color": "primary",
+      "completed": false
+    },
+    {
+      "id": "ev5",
+      "title": "Gala Dress Preview",
+      "description": "Private studio fitting and sketches adjustments.",
+      "date": "2026-05-29",
+      "time": "15:00",
+      "type": "special",
+      "color": "secondary",
+      "completed": false
+    }
+  ],
+  "moodLogs": [
+    {
+      "id": "mld1",
+      "emoji": "✨",
+      "label": "Glowing",
+      "date": "2026-05-29"
+    }
+  ],
+  "watchlist": [
+    {
+      "id": "w1",
+      "title": "The Crown",
+      "platform": "Netflix",
+      "type": "show",
+      "status": "watched",
+      "rating": 5,
+      "notes": "Season 5"
+    },
+    {
+      "id": "w2",
+      "title": "Succession",
+      "platform": "HBO Max",
+      "type": "show",
+      "status": "watching",
+      "rating": 4,
+      "notes": "Finale Prep"
+    },
+    {
+      "id": "w3",
+      "title": "Dune: Part Two",
+      "platform": "Theater",
+      "type": "movie",
+      "status": "want_to_watch",
+      "rating": 5,
+      "notes": "Cinema Release"
+    }
+  ]
+}

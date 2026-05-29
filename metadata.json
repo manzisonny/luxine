@@ -1,0 +1,6 @@
+{
+  "name": "Luxine's World",
+  "description": "A personal digital universe and beautiful memory capsule for Iriza Ella Luxine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

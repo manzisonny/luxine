@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg-primary: #fcf9f8;
+  --bg-secondary: #fff5f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fff3f3;
+  --border-light: #e7bcb9;
+  --border-pale: #ffe4e4;
+  --red-primary: #bd001d;
+  --red-container: #e8182c;
+  --red-soft: #ff4d60;
+  --red-dark: #930014;
+  --text-primary: #1c1b1b;
+  --text-secondary: #6c5a5d;
+  --text-muted: #926e6b;
+  --shadow-color: rgba(232, 24, 44, 0.08);
+  --shadow-strong: rgba(232, 24, 44, 0.15);
+}
+
+.dark {
+  --bg-primary: #0f0507;
+  --bg-secondary: #180a0c;
+  --bg-card: #1e0d10;
+  --bg-card-hover: #261115;
+  --border-light: rgba(232, 24, 44, 0.15);
+  --border-pale: rgba(232, 24, 44, 0.08);
+  --red-primary: #ffb3ae;
+  --red-container: #e8182c;
+  --red-soft: #ff6b7d;
+  --red-dark: #ffe8ea;
+  --text-primary: #fcf9f8;
+  --text-secondary: #d8c1c4;
+  --text-muted: #926e6b;
+  --shadow-color: rgba(232, 24, 44, 0.25);
+  --shadow-strong: rgba(232, 24, 44, 0.4);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(232, 24, 44, 0.08);
+}
+
+.dark .glass-panel {
+  background-color: rgba(30, 13, 16, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(232, 24, 44, 0.15);
+}
+
+/* Luxury Glow Red Button styling */
+.luxine-glow-button {
+  background: linear-gradient(180deg, var(--red-container) 0%, #b01221 100%);
+  box-shadow: 0px 4px 18px var(--shadow-strong);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxine-glow-button:hover {
+  box-shadow: 0px 8px 24px rgba(232, 24, 44, 0.5);
+  transform: translateY(-2px);
+}
+
+.luxine-glow-button:active {
+  transform: translateY(0);
+}
+
+/* Elegant fonts */
+.font-accent-italic {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+}
+
+.font-headline-serif {
+  font-family: "Playfair Display", serif;
+}
+
+.font-label-mono {
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Custom Shake and Keyframe animation for access form */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+.shake-animation {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Metallic red text effect */
+.shimmer-text {
+  background: linear-gradient(to right, #bd001d, #ffb3ae, #bd001d);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position: 200% center; }
+}
+
+/* Custom slider scrollbars hiding */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Fade loading */
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Heart burst particle simulation coordinates */
+@keyframes heartBurstAnim {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) scale(0);
+    opacity: 0;
+  }
+}
+
+.heart-particle {
+  animation: heartBurstAnim 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
