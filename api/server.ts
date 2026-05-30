@@ -1,36 +1,74 @@
 import express from "express";
-import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import path from "path";
+import { kv } from "@vercel/kv";
 
 const app = express();
-const PORT = 3000;
-const DB_PATH = path.join(process.cwd(), "db.json");
-
 app.use(express.json());
 
-// Helpers to read/write persistent JSON DB
-function readDb() {
+const DB_PATH = path.join(process.cwd(), "db.json");
+
+// Helper to check if Vercel KV is connected
+const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+
+// In-memory cache fallback for development when writing to file fails on read-only environments
+let localDbCache: any = null;
+
+async function getDb(): Promise<any> {
+  if (useKV) {
+    try {
+      const data = await kv.get("luxine_db_v2");
+      if (data) {
+        return typeof data === "string" ? JSON.parse(data) : data;
+      }
+    } catch (err) {
+      console.error("Vercel KV Read error:", err);
+    }
+  }
+
+  // Local filesystem fallback
+  if (localDbCache) return localDbCache;
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, "utf-8");
-      return JSON.parse(data);
+      localDbCache = JSON.parse(data);
+      return localDbCache;
     }
   } catch (err) {
-    console.error("Error reading db.json, falling back to empty database", err);
+    console.error("Error reading local db.json:", err);
   }
-  return { settings: {}, media: [], mediaComments: [], mediaLikes: [], messages: [], messageLikes: [], events: [], moodLogs: [], watchlist: [] };
+  
+  // Default structure
+  const defaultDb = {
+    settings: { luxineMood: "Radiant", luxineMoodEmoji: "✨" },
+    media: [],
+    mediaComments: [],
+    mediaLikes: [],
+    messages: [],
+    messageLikes: [],
+    events: [],
+    moodLogs: [],
+    watchlist: []
+  };
+  localDbCache = defaultDb;
+  return defaultDb;
 }
 
-function writeDb(data: any) {
+async function saveDb(data: any): Promise<void> {
+  localDbCache = data;
+  if (useKV) {
+    try {
+      await kv.set("luxine_db_v2", data);
+      return;
+    } catch (err) {
+      console.error("Vercel KV Write error:", err);
+    }
+  }
+
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
-    console.error("Error writing to db.json", err);
+    console.error("Error writing to local db.json:", err);
   }
 }
 
@@ -108,7 +146,6 @@ app.post("/api/access", (req, res) => {
   }
   
   const formattedCode = code.trim().toLowerCase();
-  // We allow "luxine" or "1234" to correspond with the visual guidelines and original mockup
   if (formattedCode === "luxine" || formattedCode === "1234" || formattedCode === "manzi") {
     const isAdmin = formattedCode === "luxine" || formattedCode === "manzi";
     return res.status(200).json({
@@ -123,20 +160,20 @@ app.post("/api/access", (req, res) => {
 });
 
 // GET /api/media
-app.get("/api/media", (req, res) => {
-  const db = readDb();
-  res.json({ media: db.media });
+app.get("/api/media", async (req, res) => {
+  const db = await getDb();
+  res.json({ media: db.media || [] });
 });
 
-// POST /api/media (Admin or anyone can post in development sandbox!)
-app.post("/api/media", (req, res) => {
+// POST /api/media
+app.post("/api/media", async (req, res) => {
   const { url, type, caption, tags, isFavourite } = req.body;
   
   if (!url || !type) {
     return res.status(400).json({ error: "Missing required fields url or type." });
   }
   
-  const db = readDb();
+  const db = await getDb();
   const newMedia = {
     id: "m_" + Math.random().toString(36).substring(2, 11),
     url,
@@ -149,17 +186,21 @@ app.post("/api/media", (req, res) => {
     createdAt: new Date().toISOString()
   };
   
+  db.media = db.media || [];
   db.media.unshift(newMedia);
-  writeDb(db);
+  await saveDb(db);
   res.status(201).json(newMedia);
 });
 
 // POST /api/media/:id/like
-app.post("/api/media/:id/like", (req, res) => {
+app.post("/api/media/:id/like", async (req, res) => {
   const { id } = req.params;
   const { visitorId } = req.body;
   
-  const db = readDb();
+  const db = await getDb();
+  db.media = db.media || [];
+  db.mediaLikes = db.mediaLikes || [];
+  
   const itemIndex = db.media.findIndex((m: any) => m.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Media item not found" });
@@ -171,28 +212,29 @@ app.post("/api/media/:id/like", (req, res) => {
   let liked = false;
   if (likeIndex === -1) {
     db.mediaLikes.push(likeKey);
-    db.media[itemIndex].likesCount += 1;
+    db.media[itemIndex].likesCount = (db.media[itemIndex].likesCount || 0) + 1;
     liked = true;
   } else {
     db.mediaLikes.splice(likeIndex, 1);
-    db.media[itemIndex].likesCount = Math.max(0, db.media[itemIndex].likesCount - 1);
+    db.media[itemIndex].likesCount = Math.max(0, (db.media[itemIndex].likesCount || 0) - 1);
     liked = false;
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ liked, likesCount: db.media[itemIndex].likesCount });
 });
 
 // GET /api/media/:id/comments
-app.get("/api/media/:id/comments", (req, res) => {
+app.get("/api/media/:id/comments", async (req, res) => {
   const { id } = req.params;
-  const db = readDb();
+  const db = await getDb();
+  db.mediaComments = db.mediaComments || [];
   const comments = db.mediaComments.filter((c: any) => c.mediaId === id);
   res.json({ comments });
 });
 
 // POST /api/media/:id/comments
-app.post("/api/media/:id/comments", (req, res) => {
+app.post("/api/media/:id/comments", async (req, res) => {
   const { id } = req.params;
   const { authorName, content } = req.body;
   
@@ -200,7 +242,10 @@ app.post("/api/media/:id/comments", (req, res) => {
     return res.status(400).json({ error: "Comment content is required" });
   }
   
-  const db = readDb();
+  const db = await getDb();
+  db.media = db.media || [];
+  db.mediaComments = db.mediaComments || [];
+  
   const itemIndex = db.media.findIndex((m: any) => m.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Media item not found." });
@@ -216,32 +261,33 @@ app.post("/api/media/:id/comments", (req, res) => {
   };
   
   db.mediaComments.push(newComment);
-  db.media[itemIndex].commentsCount += 1;
-  writeDb(db);
+  db.media[itemIndex].commentsCount = (db.media[itemIndex].commentsCount || 0) + 1;
+  await saveDb(db);
   
   res.status(201).json(newComment);
 });
 
 // GET /api/messages
-app.get("/api/messages", (req, res) => {
-  const db = readDb();
-  // Sorting: Pinned messages always at top, then sort by likes count combined with recency
+app.get("/api/messages", async (req, res) => {
+  const db = await getDb();
+  db.messages = db.messages || [];
   const sorted = [...db.messages].sort((a: any, b: any) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    return b.likesCount - a.likesCount || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return (b.likesCount || 0) - (a.likesCount || 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
   res.json({ messages: sorted });
 });
 
 // POST /api/messages
-app.post("/api/messages", (req, res) => {
+app.post("/api/messages", async (req, res) => {
   const { authorName, content, isSpecial } = req.body;
   if (!content) {
     return res.status(400).json({ error: "Message content cannot be empty." });
   }
   
-  const db = readDb();
+  const db = await getDb();
+  db.messages = db.messages || [];
   const newMessage = {
     id: "msg_" + Math.random().toString(36).substring(2, 11),
     authorName: authorName?.trim() || "Anonymous",
@@ -253,16 +299,19 @@ app.post("/api/messages", (req, res) => {
   };
   
   db.messages.unshift(newMessage);
-  writeDb(db);
+  await saveDb(db);
   res.status(201).json(newMessage);
 });
 
 // POST /api/messages/:id/like
-app.post("/api/messages/:id/like", (req, res) => {
+app.post("/api/messages/:id/like", async (req, res) => {
   const { id } = req.params;
   const { visitorId } = req.body;
   
-  const db = readDb();
+  const db = await getDb();
+  db.messages = db.messages || [];
+  db.messageLikes = db.messageLikes || [];
+  
   const itemIndex = db.messages.findIndex((m: any) => m.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Message not found" });
@@ -274,24 +323,25 @@ app.post("/api/messages/:id/like", (req, res) => {
   let liked = false;
   if (likeIndex === -1) {
     db.messageLikes.push(likeKey);
-    db.messages[itemIndex].likesCount += 1;
+    db.messages[itemIndex].likesCount = (db.messages[itemIndex].likesCount || 0) + 1;
     liked = true;
   } else {
     db.messageLikes.splice(likeIndex, 1);
-    db.messages[itemIndex].likesCount = Math.max(0, db.messages[itemIndex].likesCount - 1);
+    db.messages[itemIndex].likesCount = Math.max(0, (db.messages[itemIndex].likesCount || 0) - 1);
     liked = false;
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ liked, likesCount: db.messages[itemIndex].likesCount });
 });
 
-// PATCH /api/messages/:id (Admin pins/special status toggle)
-app.patch("/api/messages/:id", (req, res) => {
+// PATCH /api/messages/:id
+app.patch("/api/messages/:id", async (req, res) => {
   const { id } = req.params;
   const { isPinned, isSpecial } = req.body;
   
-  const db = readDb();
+  const db = await getDb();
+  db.messages = db.messages || [];
   const itemIndex = db.messages.findIndex((m: any) => m.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Message not found" });
@@ -300,15 +350,16 @@ app.patch("/api/messages/:id", (req, res) => {
   if (isPinned !== undefined) db.messages[itemIndex].isPinned = !!isPinned;
   if (isSpecial !== undefined) db.messages[itemIndex].isSpecial = !!isSpecial;
   
-  writeDb(db);
+  await saveDb(db);
   res.json(db.messages[itemIndex]);
 });
 
-// DELETE /api/messages/:id (Admin delete)
-app.delete("/api/messages/:id", (req, res) => {
+// DELETE /api/messages/:id
+app.delete("/api/messages/:id", async (req, res) => {
   const { id } = req.params;
   
-  const db = readDb();
+  const db = await getDb();
+  db.messages = db.messages || [];
   const initialLen = db.messages.length;
   db.messages = db.messages.filter((m: any) => m.id !== id);
   
@@ -316,24 +367,25 @@ app.delete("/api/messages/:id", (req, res) => {
     return res.status(404).json({ error: "Message not found" });
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ success: true });
 });
 
 // GET /api/events
-app.get("/api/events", (req, res) => {
-  const db = readDb();
-  res.json({ events: db.events });
+app.get("/api/events", async (req, res) => {
+  const db = await getDb();
+  res.json({ events: db.events || [] });
 });
 
 // POST /api/events
-app.post("/api/events", (req, res) => {
+app.post("/api/events", async (req, res) => {
   const { title, description, date, time, type, color } = req.body;
   if (!title || !date || !type) {
     return res.status(400).json({ error: "Title, date, and event type are mandatory." });
   }
   
-  const db = readDb();
+  const db = await getDb();
+  db.events = db.events || [];
   const newEvent = {
     id: "ev_" + Math.random().toString(36).substring(2, 11),
     title,
@@ -346,16 +398,17 @@ app.post("/api/events", (req, res) => {
   };
   
   db.events.push(newEvent);
-  writeDb(db);
+  await saveDb(db);
   res.status(201).json(newEvent);
 });
 
 // PATCH /api/events/:id
-app.patch("/api/events/:id", (req, res) => {
+app.patch("/api/events/:id", async (req, res) => {
   const { id } = req.params;
   const { title, description, date, time, type, color, completed } = req.body;
   
-  const db = readDb();
+  const db = await getDb();
+  db.events = db.events || [];
   const itemIndex = db.events.findIndex((e: any) => e.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Event not found" });
@@ -370,14 +423,15 @@ app.patch("/api/events/:id", (req, res) => {
   if (color !== undefined) target.color = color;
   if (completed !== undefined) target.completed = !!completed;
   
-  writeDb(db);
+  await saveDb(db);
   res.json(target);
 });
 
 // DELETE /api/events/:id
-app.delete("/api/events/:id", (req, res) => {
+app.delete("/api/events/:id", async (req, res) => {
   const { id } = req.params;
-  const db = readDb();
+  const db = await getDb();
+  db.events = db.events || [];
   const initialLen = db.events.length;
   db.events = db.events.filter((e: any) => e.id !== id);
   
@@ -385,30 +439,30 @@ app.delete("/api/events/:id", (req, res) => {
     return res.status(404).json({ error: "Event not found" });
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ success: true });
 });
 
 // GET /api/mood
-app.get("/api/mood", (req, res) => {
-  const db = readDb();
-  res.json({ settings: db.settings, moodLogs: db.moodLogs });
+app.get("/api/mood", async (req, res) => {
+  const db = await getDb();
+  res.json({ settings: db.settings || {}, moodLogs: db.moodLogs || [] });
 });
 
 // POST /api/mood
-app.post("/api/mood", (req, res) => {
+app.post("/api/mood", async (req, res) => {
   const { emoji, label } = req.body;
   if (!emoji || !label) {
     return res.status(400).json({ error: "Emoji and label are required" });
   }
   
-  const db = readDb();
+  const db = await getDb();
+  db.settings = db.settings || {};
+  db.moodLogs = db.moodLogs || [];
   
-  // Update Settings
   db.settings.luxineMood = label;
   db.settings.luxineMoodEmoji = emoji;
   
-  // Track in logs for today
   const todayStr = new Date().toISOString().split("T")[0];
   const logIndex = db.moodLogs.findIndex((l: any) => l.date === todayStr);
   const newLog = {
@@ -424,13 +478,12 @@ app.post("/api/mood", (req, res) => {
     db.moodLogs.push(newLog);
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ success: true, settings: db.settings, moodLogs: db.moodLogs });
 });
 
 // GET /api/affirmations
 app.get("/api/affirmations", (req, res) => {
-  // Return deterministic daily affirmation based on the day of the year
   const startOfYear = new Date(new Date().getFullYear(), 0, 1);
   const diff = new Date().getTime() - startOfYear.getTime();
   const oneDay = 1000 * 60 * 60 * 24;
@@ -441,19 +494,20 @@ app.get("/api/affirmations", (req, res) => {
 });
 
 // GET /api/watchlist
-app.get("/api/watchlist", (req, res) => {
-  const db = readDb();
-  res.json({ watchlist: db.watchlist });
+app.get("/api/watchlist", async (req, res) => {
+  const db = await getDb();
+  res.json({ watchlist: db.watchlist || [] });
 });
 
 // POST /api/watchlist
-app.post("/api/watchlist", (req, res) => {
+app.post("/api/watchlist", async (req, res) => {
   const { title, platform, type, status, rating, notes } = req.body;
   if (!title || !platform || !type) {
     return res.status(400).json({ error: "Title, platform, and platform type are mandatory." });
   }
   
-  const db = readDb();
+  const db = await getDb();
+  db.watchlist = db.watchlist || [];
   const newItem = {
     id: "w_" + Math.random().toString(36).substring(2, 11),
     title,
@@ -465,16 +519,17 @@ app.post("/api/watchlist", (req, res) => {
   };
   
   db.watchlist.push(newItem);
-  writeDb(db);
+  await saveDb(db);
   res.status(201).json(newItem);
 });
 
 // PATCH /api/watchlist/:id
-app.patch("/api/watchlist/:id", (req, res) => {
+app.patch("/api/watchlist/:id", async (req, res) => {
   const { id } = req.params;
   const { status, rating, notes } = req.body;
   
-  const db = readDb();
+  const db = await getDb();
+  db.watchlist = db.watchlist || [];
   const itemIndex = db.watchlist.findIndex((w: any) => w.id === id);
   if (itemIndex === -1) {
     return res.status(404).json({ error: "Watchlist item not found" });
@@ -485,14 +540,15 @@ app.patch("/api/watchlist/:id", (req, res) => {
   if (rating !== undefined) target.rating = Number(rating);
   if (notes !== undefined) target.notes = notes;
   
-  writeDb(db);
+  await saveDb(db);
   res.json(target);
 });
 
 // DELETE /api/watchlist/:id
-app.delete("/api/watchlist/:id", (req, res) => {
+app.delete("/api/watchlist/:id", async (req, res) => {
   const { id } = req.params;
-  const db = readDb();
+  const db = await getDb();
+  db.watchlist = db.watchlist || [];
   const initialLen = db.watchlist.length;
   db.watchlist = db.watchlist.filter((w: any) => w.id !== id);
   
@@ -500,24 +556,24 @@ app.delete("/api/watchlist/:id", (req, res) => {
     return res.status(404).json({ error: "Watchlist item not found" });
   }
   
-  writeDb(db);
+  await saveDb(db);
   res.json({ success: true });
 });
 
 // GET /api/stories
-app.get("/api/stories", (req, res) => {
-  const db = readDb();
+app.get("/api/stories", async (req, res) => {
+  const db = await getDb();
   res.json({ stories: db.stories || [] });
 });
 
 // POST /api/stories
-app.post("/api/stories", (req, res) => {
+app.post("/api/stories", async (req, res) => {
   const { author, content, category } = req.body;
   if (!content) {
     return res.status(400).json({ error: "Story content is required." });
   }
 
-  const db = readDb();
+  const db = await getDb();
   db.stories = db.stories || [];
   const newStory = {
     id: "story_" + Math.random().toString(36).substring(2, 11),
@@ -531,19 +587,19 @@ app.post("/api/stories", (req, res) => {
   };
 
   db.stories.unshift(newStory);
-  writeDb(db);
+  await saveDb(db);
   res.status(201).json(newStory);
 });
 
 // POST /api/stories/:id/react
-app.post("/api/stories/:id/react", (req, res) => {
+app.post("/api/stories/:id/react", async (req, res) => {
   const { id } = req.params;
   const { type } = req.body; // 'laugh' | 'omg' | 'snap'
   if (!type || !["laugh", "omg", "snap"].includes(type)) {
     return res.status(400).json({ error: "Invalid reaction type." });
   }
 
-  const db = readDb();
+  const db = await getDb();
   db.stories = db.stories || [];
   const itemIndex = db.stories.findIndex((s: any) => s.id === id);
   if (itemIndex === -1) {
@@ -555,35 +611,8 @@ app.post("/api/stories/:id/react", (req, res) => {
   else if (type === "omg") story.omgsCount = (story.omgsCount || 0) + 1;
   else if (type === "snap") story.snapsCount = (story.snapsCount || 0) + 1;
 
-  writeDb(db);
+  await saveDb(db);
   res.json(story);
 });
 
-// Server boot function handling dev middleware and static build fallback
-async function serveApp() {
-  if (process.env.NODE_ENV !== "production") {
-    // Integrate Vite development server middleware
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    
-    app.use(vite.middlewares);
-    console.log("Vite dev server mounted as Express middleware");
-  } else {
-    // Dist bundle production serve
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*all", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-  
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Express Full-stack server running successfully on http://0.0.0.0:${PORT}`);
-  });
-}
-
-serveApp().catch((err) => {
-  console.error("Critical server failure on boot:", err);
-});
+export default app;

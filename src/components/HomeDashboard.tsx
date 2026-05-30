@@ -46,36 +46,94 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     fetchData();
   }, []);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     try {
-      // 1. Mood from localStorage
-      const storedMood = localStorage.getItem("luxine_mood_v1");
-      if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
+      // 1. Mood API
+      fetch("/api/mood")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.settings) {
+            setSettings(data.settings);
+          } else {
+            const storedMood = localStorage.getItem("luxine_mood_v1");
+            if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
+          }
+        })
+        .catch(() => {
+          const storedMood = localStorage.getItem("luxine_mood_v1");
+          if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
+        });
 
-      // 2. Profile picture from localStorage (preserved, never modified/removed by model)
+      // 2. Profile picture from localStorage (preserved)
       const storedPic = localStorage.getItem("luxine_profile_picture_v1");
       if (storedPic) setProfilePic(storedPic);
 
-      // 3. Latest media from localStorage
-      const storedMedia = localStorage.getItem("luxine_media_v1");
-      if (storedMedia) {
-        const mediaArr = JSON.parse(storedMedia);
-        if (mediaArr.length > 0) setLatestMedia(mediaArr[0]);
-      }
+      // 3. Latest media
+      fetch("/api/media")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.media) && data.media.length > 0) {
+            setLatestMedia(data.media[0]);
+          } else {
+            const storedMedia = localStorage.getItem("luxine_media_v1");
+            if (storedMedia) {
+              const mediaArr = JSON.parse(storedMedia);
+              if (mediaArr.length > 0) setLatestMedia(mediaArr[0]);
+            }
+          }
+        })
+        .catch(() => {
+          const storedMedia = localStorage.getItem("luxine_media_v1");
+          if (storedMedia) {
+            const mediaArr = JSON.parse(storedMedia);
+            if (mediaArr.length > 0) setLatestMedia(mediaArr[0]);
+          }
+        });
 
       // 4. Latest message
-      const storedMsgs = localStorage.getItem("luxine_messages_v1");
-      if (storedMsgs) {
-        const msgs = JSON.parse(storedMsgs);
-        if (msgs.length > 0) setLatestMsg(msgs[0]);
-      }
+      fetch("/api/messages")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+            setLatestMsg(data.messages[0]);
+          } else {
+            const storedMsgs = localStorage.getItem("luxine_messages_v1");
+            if (storedMsgs) {
+              const msgs = JSON.parse(storedMsgs);
+              if (msgs.length > 0) setLatestMsg(msgs[0]);
+            }
+          }
+        })
+        .catch(() => {
+          const storedMsgs = localStorage.getItem("luxine_messages_v1");
+          if (storedMsgs) {
+            const msgs = JSON.parse(storedMsgs);
+            if (msgs.length > 0) setLatestMsg(msgs[0]);
+          }
+        });
 
       // 5. Next event
-      const storedEvs = localStorage.getItem("luxine_events_v1");
-      if (storedEvs) {
-        const evs = JSON.parse(storedEvs).filter((e: any) => !e.completed);
-        if (evs.length > 0) setNextEvent(evs[0]);
-      }
+      fetch("/api/events")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.events)) {
+            const activeEvs = data.events.filter((e: any) => !e.completed);
+            if (activeEvs.length > 0) setNextEvent(activeEvs[0]);
+          } else {
+            const storedEvs = localStorage.getItem("luxine_events_v1");
+            if (storedEvs) {
+              const evs = JSON.parse(storedEvs).filter((e: any) => !e.completed);
+              if (evs.length > 0) setNextEvent(evs[0]);
+            }
+          }
+        })
+        .catch(() => {
+          const storedEvs = localStorage.getItem("luxine_events_v1");
+          if (storedEvs) {
+            const evs = JSON.parse(storedEvs).filter((e: any) => !e.completed);
+            if (evs.length > 0) setNextEvent(evs[0]);
+          }
+        });
     } catch (err) {
       console.error("Dashboard load error", err);
     } finally {
@@ -100,6 +158,13 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     const newSettings = { ...settings, luxineMood: opt.label, luxineMoodEmoji: opt.emoji };
     setSettings(newSettings);
     localStorage.setItem("luxine_mood_v1", JSON.stringify(newSettings));
+
+    // Post to database
+    fetch("/api/mood", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji: opt.emoji, label: opt.label })
+    }).catch(() => {});
   };
 
   const quickLaunchItems = [

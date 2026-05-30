@@ -50,9 +50,29 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
   const [likesState, setLikesState] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    const loaded = loadMessages();
-    setMessages(loaded);
-    setLoading(false);
+    fetch("/api/messages")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.messages)) {
+          // Merge with any local messages so they don't get lost
+          const local = loadMessages();
+          const merged = [...data.messages];
+          local.forEach((loc) => {
+            if (!merged.some((m) => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setMessages(merged);
+        } else {
+          setMessages(loadMessages());
+        }
+      })
+      .catch(() => {
+        setMessages(loadMessages());
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const handleLike = (id: string, e: React.MouseEvent) => {
@@ -64,6 +84,13 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
     );
     setMessages(updated);
     saveMessages(updated);
+
+    // Call API in background
+    fetch(`/api/messages/${id}/like`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId })
+    }).catch(() => {});
   };
 
   const handleComposeSubmit = (e: React.FormEvent) => {
@@ -71,26 +98,49 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
     if (!content.trim()) return;
     setCommentingProgress(true);
 
-    setTimeout(() => {
-      const newMsg: Message = {
-        id: "msg_" + Date.now(),
-        authorName: authorName.trim() || "Anonymous Friend",
-        content: content.trim(),
-        isSpecial,
-        isPinned: false,
-        likesCount: 0,
-        createdAt: new Date().toISOString()
-      };
-      const updated = [newMsg, ...messages];
-      setMessages(updated);
-      saveMessages(updated);
-      setContent("");
-      setAuthorName("");
-      setIsSpecial(false);
-      setCommentingProgress(false);
-      setSuccessToast(true);
-      setTimeout(() => setSuccessToast(false), 3000);
-    }, 500);
+    const payload = {
+      authorName: authorName.trim() || "Anonymous Friend",
+      content: content.trim(),
+      isSpecial
+    };
+
+    fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((savedMsg) => {
+        const updated = [savedMsg, ...messages];
+        setMessages(updated);
+        saveMessages(updated);
+      })
+      .catch(() => {
+        // Fallback
+        const newMsg: Message = {
+          id: "msg_" + Date.now(),
+          authorName: payload.authorName,
+          content: payload.content,
+          isSpecial: payload.isSpecial,
+          isPinned: false,
+          likesCount: 0,
+          createdAt: new Date().toISOString()
+        };
+        const updated = [newMsg, ...messages];
+        setMessages(updated);
+        saveMessages(updated);
+      })
+      .finally(() => {
+        setContent("");
+        setAuthorName("");
+        setIsSpecial(false);
+        setCommentingProgress(false);
+        setSuccessToast(true);
+        setTimeout(() => setSuccessToast(false), 3000);
+      });
   };
 
   const handleMessageDelete = (id: string) => {
@@ -98,6 +148,10 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
     const updated = messages.filter((m) => m.id !== id);
     setMessages(updated);
     saveMessages(updated);
+
+    fetch(`/api/messages/${id}`, {
+      method: "DELETE"
+    }).catch(() => {});
   };
 
   const handlePinToggle = (id: string, currentPin: boolean) => {
@@ -105,6 +159,12 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
     const updated = messages.map((m) => m.id === id ? { ...m, isPinned: !currentPin } : m);
     setMessages(updated);
     saveMessages(updated);
+
+    fetch(`/api/messages/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPinned: !currentPin })
+    }).catch(() => {});
   };
 
   const handleSpecialToggle = (id: string, currentSpecial: boolean) => {
@@ -112,6 +172,12 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
     const updated = messages.map((m) => m.id === id ? { ...m, isSpecial: !currentSpecial } : m);
     setMessages(updated);
     saveMessages(updated);
+
+    fetch(`/api/messages/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isSpecial: !currentSpecial })
+    }).catch(() => {});
   };
 
   const sortedMessages = [...messages].sort((a, b) => {

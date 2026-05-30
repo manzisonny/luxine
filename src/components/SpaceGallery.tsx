@@ -68,10 +68,31 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
   const [heartParticles, setHeartParticles] = useState<Array<{ id: number; x: number; y: number; angle: number }>>([]);
 
   useEffect(() => {
-    const stored = loadMedia();
-    setMediaList(stored);
-    setLoading(false);
-    
+    // 1. Fetch from database first
+    fetch("/api/media")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.media)) {
+          // Merge with any local media so we don't lose them
+          const local = loadMedia();
+          const merged = [...data.media];
+          local.forEach((loc) => {
+            if (!merged.some((m) => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setMediaList(merged);
+        } else {
+          setMediaList(loadMedia());
+        }
+      })
+      .catch(() => {
+        setMediaList(loadMedia());
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
     // Load pre-existing likes state from visitor session
     try {
       const storedLikes = localStorage.getItem(`luxine_media_liked_${visitorId}`);
@@ -96,11 +117,27 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
 
   const handleOpenMedia = (media: Media) => {
     setSelectedMedia(media);
-    const key = `comments_${media.id}`;
-    try {
-      const stored = JSON.parse(localStorage.getItem(key) || "[]");
-      setComments(stored);
-    } catch { setComments([]); }
+    fetch(`/api/media/${media.id}/comments`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.comments)) {
+          setComments(data.comments);
+        } else {
+          // Fallback to local storage comments
+          const key = `comments_${media.id}`;
+          try {
+            const stored = JSON.parse(localStorage.getItem(key) || "[]");
+            setComments(stored);
+          } catch { setComments([]); }
+        }
+      })
+      .catch(() => {
+        const key = `comments_${media.id}`;
+        try {
+          const stored = JSON.parse(localStorage.getItem(key) || "[]");
+          setComments(stored);
+        } catch { setComments([]); }
+      });
   };
 
   const handleLike = (id: string, e: React.MouseEvent) => {
@@ -122,6 +159,7 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
     setLikesState(updatedLikes);
     localStorage.setItem(`luxine_media_liked_${visitorId}`, JSON.stringify(updatedLikes));
 
+    // Optimistically update frontend state
     const updated = mediaList.map((m) =>
       m.id === id ? { ...m, likesCount: m.likesCount + (newLiked ? 1 : -1) } : m
     );
@@ -130,6 +168,13 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
     if (selectedMedia?.id === id) {
       setSelectedMedia((prev) => prev ? { ...prev, likesCount: prev.likesCount + (newLiked ? 1 : -1) } : null);
     }
+
+    // Call API in background to save globally
+    fetch(`/api/media/${id}/like`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId })
+    }).catch(() => {});
   };
 
   const handleShare = (media: Media, e: React.MouseEvent) => {
@@ -172,10 +217,11 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
       content: newComment.trim(),
       createdAt: new Date().toISOString()
     };
+    
+    // Optimistic update
     const updated = [...comments, comment];
     setComments(updated);
     localStorage.setItem(`comments_${selectedMedia.id}`, JSON.stringify(updated));
-    setNewComment("");
     
     const updatedMedia = mediaList.map((m) =>
       m.id === selectedMedia.id ? { ...m, commentsCount: m.commentsCount + 1 } : m
@@ -183,6 +229,15 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
     setMediaList(updatedMedia);
     saveMedia(updatedMedia);
     setSelectedMedia((prev) => prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : null);
+
+    // Sync to remote API
+    fetch(`/api/media/${selectedMedia.id}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authorName: author, content: newComment.trim() })
+    }).catch(() => {});
+    
+    setNewComment("");
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,18 +310,35 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
       createdAt: new Date().toISOString()
     };
 
-    setTimeout(() => {
-      const updated = [newMedia, ...mediaList];
-      setMediaList(updated);
-      saveMedia(updated);
-      setShowUpload(false);
-      setUploadUrl("");
-      setUploadCaption("");
-      setUploadTags("");
-      setUploadIsFav(false);
-      setPreviewSrc("");
-      setUploadProgress(false);
-    }, 600);
+    fetch("/api/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMedia)
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("API error");
+      })
+      .then((savedMedia) => {
+        const updated = [savedMedia, ...mediaList];
+        setMediaList(updated);
+        saveMedia(updated);
+      })
+      .catch(() => {
+        // Fallback: save to local list
+        const updated = [newMedia, ...mediaList];
+        setMediaList(updated);
+        saveMedia(updated);
+      })
+      .finally(() => {
+        setShowUpload(false);
+        setUploadUrl("");
+        setUploadCaption("");
+        setUploadTags("");
+        setUploadIsFav(false);
+        setPreviewSrc("");
+        setUploadProgress(false);
+      });
   };
 
   const handleMediaDelete = (id: string, e: React.MouseEvent) => {

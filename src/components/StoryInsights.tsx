@@ -63,7 +63,26 @@ export default function StoryInsights() {
   const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; char: string; x: number; y: number }>>([]);
 
   useEffect(() => {
-    setStories(loadStories());
+    fetch("/api/stories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.stories)) {
+          // Merge local stories so they aren't lost
+          const local = loadStories();
+          const merged = [...data.stories];
+          local.forEach((loc) => {
+            if (!merged.some((s) => s.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setStories(merged);
+        } else {
+          setStories(loadStories());
+        }
+      })
+      .catch(() => {
+        setStories(loadStories());
+      });
   }, []);
 
   const generateGridData = () => {
@@ -112,34 +131,58 @@ export default function StoryInsights() {
     e.preventDefault();
     if (!storyContent.trim()) return;
 
-    const newStory: FunnyStory = {
-      id: "story_" + Date.now(),
+    const payload = {
       author: authorName.trim() || "Anonymous Friend",
       content: storyContent.trim(),
-      category,
-      laughsCount: 1,
-      omgsCount: 0,
-      snapsCount: 0,
-      createdAt: new Date().toISOString()
+      category
     };
 
-    const updated = [newStory, ...stories];
-    setStories(updated);
-    saveStories(updated);
+    fetch("/api/stories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((savedStory) => {
+        const updated = [savedStory, ...stories];
+        setStories(updated);
+        saveStories(updated);
+      })
+      .catch(() => {
+        // Fallback
+        const newStory: FunnyStory = {
+          id: "story_" + Date.now(),
+          author: payload.author,
+          content: payload.content,
+          category: payload.category,
+          laughsCount: 1,
+          omgsCount: 0,
+          snapsCount: 0,
+          createdAt: new Date().toISOString()
+        };
+        const updated = [newStory, ...stories];
+        setStories(updated);
+        saveStories(updated);
+      })
+      .finally(() => {
+        setStoryContent("");
+        setAuthorName("");
+        setCategory("roast");
+        setActiveTab("feed");
+        
+        triggerFloatingEmoji("😂");
+        triggerFloatingEmoji("✨");
 
-    setStoryContent("");
-    setAuthorName("");
-    setCategory("roast");
-    setActiveTab("feed");
-    
-    triggerFloatingEmoji("😂");
-    triggerFloatingEmoji("✨");
-
-    setSuccessToast(true);
-    setTimeout(() => setSuccessToast(false), 2500);
+        setSuccessToast(true);
+        setTimeout(() => setSuccessToast(false), 2500);
+      });
   };
 
   const handleReact = (id: string, type: "laugh" | "omg" | "snap") => {
+    // Optimistic update
     const updated = stories.map((s) => {
       if (s.id !== id) return s;
       if (type === "laugh") {
@@ -155,6 +198,13 @@ export default function StoryInsights() {
     });
     setStories(updated);
     saveStories(updated);
+
+    // Call API in background
+    fetch(`/api/stories/${id}/react`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type })
+    }).catch(() => {});
   };
 
   const getCategoryMeta = (cat: string) => {

@@ -59,9 +59,29 @@ export default function PlansCalendar({ isAdmin }: PlansCalendarProps) {
   }, []);
 
   const fetchEvents = () => {
-    const loaded = loadEvents();
-    setEvents(loaded);
-    setLoading(false);
+    fetch("/api/events")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.events)) {
+          // Merge local events so they aren't lost
+          const local = loadEvents();
+          const merged = [...data.events];
+          local.forEach((loc) => {
+            if (!merged.some((e) => e.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          setEvents(merged);
+        } else {
+          setEvents(loadEvents());
+        }
+      })
+      .catch(() => {
+        setEvents(loadEvents());
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -99,36 +119,73 @@ export default function PlansCalendar({ isAdmin }: PlansCalendarProps) {
     e.preventDefault();
     if (!newTitle.trim() || !newDate) return;
     setSubmittingProgress(true);
-    setTimeout(() => {
-      const newEv: CalendarEvent = {
-        id: "ev_" + Date.now(),
-        title: newTitle.trim(),
-        description: newDesc.trim(),
-        date: newDate,
-        time: newTime || undefined,
-        type: newType,
-        color: newColor,
-        completed: false
-      };
-      const updated = [...events, newEv];
-      setEvents(updated);
-      saveEvents(updated);
-      setShowAddEvent(false);
-      setNewTitle(""); setNewDesc(""); setNewDate("2026-05-30"); setNewTime(""); setNewType("personal");
-      setSubmittingProgress(false);
-    }, 400);
+
+    const payload = {
+      title: newTitle.trim(),
+      description: newDesc.trim(),
+      date: newDate,
+      time: newTime || undefined,
+      type: newType,
+      color: newColor
+    };
+
+    fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((savedEv) => {
+        const updated = [...events, savedEv];
+        setEvents(updated);
+        saveEvents(updated);
+      })
+      .catch(() => {
+        // Fallback
+        const newEv: CalendarEvent = {
+          id: "ev_" + Date.now(),
+          title: payload.title,
+          description: payload.description,
+          date: payload.date,
+          time: payload.time,
+          type: payload.type,
+          color: payload.color,
+          completed: false
+        };
+        const updated = [...events, newEv];
+        setEvents(updated);
+        saveEvents(updated);
+      })
+      .finally(() => {
+        setShowAddEvent(false);
+        setNewTitle(""); setNewDesc(""); setNewDate("2026-05-30"); setNewTime(""); setNewType("personal");
+        setSubmittingProgress(false);
+      });
   };
 
   const handleToggleEvent = (id: string, currentCompleted: boolean) => {
     const updated = events.map((e) => e.id === id ? { ...e, completed: !currentCompleted } : e);
     setEvents(updated);
     saveEvents(updated);
+
+    fetch(`/api/events/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !currentCompleted })
+    }).catch(() => {});
   };
 
   const handleDeleteEvent = (id: string) => {
     const updated = events.filter((e) => e.id !== id);
     setEvents(updated);
     saveEvents(updated);
+
+    fetch(`/api/events/${id}`, {
+      method: "DELETE"
+    }).catch(() => {});
   };
 
   // Helper calendar mapping builders
