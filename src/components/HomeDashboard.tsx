@@ -203,17 +203,32 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
             <Star className="w-6 h-6 fill-current animate-pulse" />
           </div>
           <div className="space-y-2 w-full">
-            <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-[#bd001d] dark:text-[#ffb3ae]">
+            <h4 
+              style={{ color: theme === "light" ? "#bd001d" : "#ffb3ae" }}
+              className="font-serif text-sm font-bold uppercase tracking-wider"
+            >
               Heavenly Birthday Blessing
             </h4>
-            <p className="font-serif text-lg md:text-xl text-black dark:text-white leading-relaxed italic font-bold">
+            <p 
+              style={{ color: theme === "light" ? "#000000" : "#ffffff" }}
+              className="font-serif text-lg md:text-xl leading-relaxed italic font-bold"
+            >
               "But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To Him be glory both now and forever! Amen."
             </p>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#FFE4E4]/40 dark:border-red-950/20">
-              <span className="font-label-mono text-[10px] font-bold text-[#bd001d] dark:text-[#ffb3ae] bg-[#FFF5F5] dark:bg-red-950/40 px-2.5 py-1 rounded-md shrink-0 w-fit">
+              <span 
+                style={{ 
+                  color: theme === "light" ? "#bd001d" : "#ffb3ae",
+                  backgroundColor: theme === "light" ? "#FFF5F5" : "rgba(232, 24, 44, 0.2)"
+                }}
+                className="font-label-mono text-[10px] font-bold px-2.5 py-1 rounded-md shrink-0 w-fit"
+              >
                 2 Peter 3:18 · Growth in Christ
               </span>
-              <p className="font-sans text-xs text-gray-900 dark:text-[#d8c1c4] italic leading-relaxed">
+              <p 
+                style={{ color: theme === "light" ? "#1c1b1b" : "#d8c1c4" }}
+                className="font-sans text-xs italic leading-relaxed"
+              >
                 May your birthday be filled with spiritual growth, deep blessings, and radiant joy! ✦
               </p>
             </div>
