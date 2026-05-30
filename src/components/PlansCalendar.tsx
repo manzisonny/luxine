@@ -17,6 +17,28 @@ interface PlansCalendarProps {
   isAdmin: boolean;
 }
 
+const EVENTS_KEY = "luxine_events_v1";
+
+const SEED_EVENTS: CalendarEvent[] = [
+  { id: "ev1", title: "Iriza's Golden Celebration 🎂", description: "Birthday — Today the world celebrates her!", date: "2026-05-30", time: "00:00", type: "birthday", color: "primary", completed: false },
+  { id: "ev2", title: "Vogue Editorial Shoot", description: "Location: Studio 54, Manhattan", date: "2026-10-10", time: "10:00", type: "appointment", color: "primary", completed: false },
+  { id: "ev3", title: "Gala Fitting", description: "Location: Milan Boutique", date: "2026-10-10", time: "14:30", type: "special", color: "secondary", completed: false },
+  { id: "ev4", title: "Dinner with M.", description: "Reservation: Le Bernardin", date: "2026-10-10", time: "20:00", type: "dream", color: "tertiary", completed: false }
+];
+
+function loadEvents(): CalendarEvent[] {
+  try {
+    const stored = localStorage.getItem(EVENTS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  localStorage.setItem(EVENTS_KEY, JSON.stringify(SEED_EVENTS));
+  return SEED_EVENTS;
+}
+
+function saveEvents(events: CalendarEvent[]) {
+  try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch {}
+}
+
 export default function PlansCalendar({ isAdmin }: PlansCalendarProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,18 +60,10 @@ export default function PlansCalendar({ isAdmin }: PlansCalendarProps) {
     fetchEvents();
   }, []);
 
-  const fetchEvents = async () => {
-    try {
-      const res = await fetch("/api/events");
-      if (res.ok) {
-        const data = await res.json();
-        setEvents(data.events);
-      }
-    } catch (err) {
-      console.error("Error loaded events calendar", err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchEvents = () => {
+    const loaded = loadEvents();
+    setEvents(loaded);
+    setLoading(false);
   };
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -83,70 +97,40 @@ export default function PlansCalendar({ isAdmin }: PlansCalendarProps) {
     setSelectedDate(formattedD);
   };
 
-  const handleAddEventSubmit = async (e: React.FormEvent) => {
+  const handleAddEventSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDate) return;
-
     setSubmittingProgress(true);
-
-    try {
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          description: newDesc.trim(),
-          date: newDate,
-          time: newTime,
-          type: newType,
-          color: newColor
-        })
-      });
-
-      if (res.ok) {
-        const savedEvent = await res.json();
-        setEvents((prev) => [...prev, savedEvent]);
-        setShowAddEvent(false);
-        // Reset Creator
-        setNewTitle("");
-        setNewDesc("");
-        setNewDate("2026-05-30");
-        setNewTime("");
-        setNewType("personal");
-      }
-    } catch (err) {
-      console.error("Error writing event plans", err);
-    } finally {
+    setTimeout(() => {
+      const newEv: CalendarEvent = {
+        id: "ev_" + Date.now(),
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        date: newDate,
+        time: newTime || undefined,
+        type: newType,
+        color: newColor,
+        completed: false
+      };
+      const updated = [...events, newEv];
+      setEvents(updated);
+      saveEvents(updated);
+      setShowAddEvent(false);
+      setNewTitle(""); setNewDesc(""); setNewDate("2026-05-30"); setNewTime(""); setNewType("personal");
       setSubmittingProgress(false);
-    }
+    }, 400);
   };
 
-  const handleToggleEvent = async (id: string, currentCompleted: boolean) => {
-    try {
-      const res = await fetch(`/api/events/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: !currentCompleted })
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setEvents((prev) => prev.map((e) => (e.id === id ? updated : e)));
-      }
-    } catch (error) {
-      console.error("Error toggling event state", error);
-    }
+  const handleToggleEvent = (id: string, currentCompleted: boolean) => {
+    const updated = events.map((e) => e.id === id ? { ...e, completed: !currentCompleted } : e);
+    setEvents(updated);
+    saveEvents(updated);
   };
 
-  const handleDeleteEvent = async (id: string) => {
-    try {
-      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setEvents((prev) => prev.filter((e) => e.id !== id));
-      }
-    } catch (error) {
-      console.error("Error deleting event schedules", error);
-    }
+  const handleDeleteEvent = (id: string) => {
+    const updated = events.filter((e) => e.id !== id);
+    setEvents(updated);
+    saveEvents(updated);
   };
 
   // Helper calendar mapping builders

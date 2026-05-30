@@ -5,6 +5,7 @@ import { Sparkles, Image, MessageSquare, Music, Calendar, BookOpen, Quote, Chevr
 interface HomeDashboardProps {
   onNavigate: (tab: "home" | "space" | "messages" | "vibes" | "plans" | "story") => void;
   isAdmin: boolean;
+  theme?: "light" | "dark";
 }
 
 interface Settings {
@@ -13,7 +14,7 @@ interface Settings {
   luxineMoodEmoji: string;
 }
 
-export default function HomeDashboard({ onNavigate, isAdmin }: HomeDashboardProps) {
+export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: HomeDashboardProps) {
   const [greeting, setGreeting] = useState("");
   const [currentDateStr, setCurrentDateStr] = useState("");
   const [settings, setSettings] = useState<Settings>({
@@ -44,51 +45,56 @@ export default function HomeDashboard({ onNavigate, isAdmin }: HomeDashboardProp
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const AFFIRMATIONS_LIST = [
+    "You don't enter rooms, Luxine — you elevate them.",
+    "The world became more interesting the moment you arrived in it.",
+    "Your softness is not weakness. It is your most powerful currency.",
+    "There is a particular kind of magic that belongs only to you.",
+    "Every shadow you cast only highlights the radiance of your path.",
+    "You carry an elegant universe inside yourself, Luxine.",
+    "Your curation of moments is pure visual poetry.",
+    "In a world of noise, your silent composure is an absolute masterpiece.",
+    "Luxine, your presence is an exquisite work of digital and tactile art.",
+    "You turn ordinary moments into breathtaking memories.",
+    "Never dim your fire, Luxine. The world needs your passionate red glow.",
+    "The world celebrates Iriza Ella Luxine — timeless, rare, and deeply loved.",
+    "Your artistic spirit breathes warmth into every blank canvas.",
+    "May your birthday season bring you closer to the absolute heights of your potential.",
+    "Today and every day, you are an absolute vision of elite craftsmanship."
+  ];
+
+  const fetchData = () => {
     try {
-      // 1. Fetch Mood settings
-      const mRes = await fetch("/api/mood");
-      if (mRes.ok) {
-        const mData = await mRes.json();
-        if (mData.settings) setSettings(mData.settings);
+      // 1. Mood from localStorage
+      const storedMood = localStorage.getItem("luxine_mood_v1");
+      if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
+
+      // 2. Daily affirmation (deterministic by day)
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000);
+      setAffirmation(AFFIRMATIONS_LIST[dayOfYear % AFFIRMATIONS_LIST.length]);
+
+      // 3. Latest media from localStorage
+      const storedMedia = localStorage.getItem("luxine_media_v1");
+      if (storedMedia) {
+        const mediaArr = JSON.parse(storedMedia);
+        if (mediaArr.length > 0) setLatestMedia(mediaArr[0]);
       }
 
-      // 2. Fetch Affirmation
-      const aRes = await fetch("/api/affirmations");
-      if (aRes.ok) {
-        const aData = await aRes.json();
-        setAffirmation(aData.affirmation);
+      // 4. Latest message
+      const storedMsgs = localStorage.getItem("luxine_messages_v1");
+      if (storedMsgs) {
+        const msgs = JSON.parse(storedMsgs);
+        if (msgs.length > 0) setLatestMsg(msgs[0]);
       }
 
-      // 3. Fetch latest Media
-      const medRes = await fetch("/api/media");
-      if (medRes.ok) {
-        const medData = await medRes.json();
-        if (medData.media && medData.media.length > 0) {
-          setLatestMedia(medData.media[0]);
-        }
-      }
-
-      // 4. Fetch latest top Message
-      const msgRes = await fetch("/api/messages");
-      if (msgRes.ok) {
-        const msgData = await msgRes.json();
-        if (msgData.messages && msgData.messages.length > 0) {
-          setLatestMsg(msgData.messages[0]);
-        }
-      }
-
-      // 5. Fetch next Event
-      const evRes = await fetch("/api/events");
-      if (evRes.ok) {
-        const evData = await evRes.json();
-        const futureEvents = evData.events.filter((e: any) => !e.completed);
-        if (futureEvents.length > 0) {
-          setNextEvent(futureEvents[0]);
-        }
+      // 5. Next event
+      const storedEvs = localStorage.getItem("luxine_events_v1");
+      if (storedEvs) {
+        const evs = JSON.parse(storedEvs).filter((e: any) => !e.completed);
+        if (evs.length > 0) setNextEvent(evs[0]);
       }
     } catch (err) {
-      console.error("Error loaded dashboard assets dashboard", err);
+      console.error("Dashboard load error", err);
     } finally {
       setLoading(false);
     }
@@ -107,24 +113,10 @@ export default function HomeDashboard({ onNavigate, isAdmin }: HomeDashboardProp
     { emoji: "🍷", label: "Sophisticated" }
   ];
 
-  const handleMoodSelect = async (opt: { emoji: string; label: string }) => {
-    if (!isAdmin) return; // Only Luxine herself can update her mood
-    try {
-      const res = await fetch("/api/mood", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emoji: opt.emoji, label: opt.label })
-      });
-      if (res.ok) {
-        setSettings({
-          ...settings,
-          luxineMood: opt.label,
-          luxineMoodEmoji: opt.emoji
-        });
-      }
-    } catch (error) {
-      console.error("Error updating mood", error);
-    }
+  const handleMoodSelect = (opt: { emoji: string; label: string }) => {
+    const newSettings = { ...settings, luxineMood: opt.label, luxineMoodEmoji: opt.emoji };
+    setSettings(newSettings);
+    localStorage.setItem("luxine_mood_v1", JSON.stringify(newSettings));
   };
 
   const quickLaunchItems = [
@@ -168,16 +160,16 @@ export default function HomeDashboard({ onNavigate, isAdmin }: HomeDashboardProp
         </div>
         <div className="flex items-center gap-3">
           <img
-            alt="Luxine's Portrait Avatar"
-            referrerPolicy="no-referrer"
-            className="w-14 h-14 rounded-full object-cover border-2 border-[#e8182c]/20 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM5UCC78fdOV9OY50nQYWvgp7pn5ohC8KSzHL77yVj31cJEKG1YdG2_vBFYvSYnYVGlO7LU4DV3Oj7REy7BRrXIJ1RUARiNjPSsK0qeuszSOZ5WEb80ngsK2tU-jMQ7xmCMYAYlZwohw4GPRvE-3ef1s3zvcgfFEKWo6815vFjxOamQ8pUt_worgKH3F96VmlzSFUZC9v4VONcdQ4CE5KjC3Z3HTI0_rEPdMClkyiB6GlengZXqLIDD4TD6sJGnot069S6obtaQPd4"
+            alt="Ella's Portrait"
+            className="w-14 h-14 rounded-full object-cover object-top border-2 border-[#e8182c]/30 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md"
+            src="/ella/IMG_6486.JPG.jpeg"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/ella/IMG_6929.JPG.jpeg'; }}
           />
         </div>
       </motion.div>
 
       {/* 2. Interactive Mood Panel */}
-      <motion.div variants={itemVariants} className="bg-white dark:bg-[#1E0D10] rounded-2xl p-6 shadow-[0px_10px_30px_rgba(232,24,44,0.03)] border border-[#FFE4E4]/30 dark:border-red-950/10">
+      <motion.div variants={itemVariants} className={`rounded-2xl p-6 shadow-[0px_10px_30px_rgba(232,24,44,0.03)] border ${theme === 'dark' ? 'bg-[#1E0D10] border-red-950/10' : 'bg-white border-[#FFE4E4]/30'}`}>
         <h3 className="font-sans text-sm font-bold tracking-wider text-[#1c1b1b] dark:text-[#fcf9f8] mb-1">
           {isAdmin ? "Set Your Vibe For Today" : "Luxine's Mood Tracker"}
         </h3>
@@ -210,7 +202,7 @@ export default function HomeDashboard({ onNavigate, isAdmin }: HomeDashboardProp
         <motion.div variants={itemVariants} className="bg-gradient-to-r from-[#FFF5F5] to-white dark:from-[#1E0D10] dark:to-[#180A0C] rounded-2xl p-8 relative overflow-hidden border-l-4 border-[#e8182c] shadow-sm">
           <Quote className="absolute right-6 top-4 w-20 h-20 text-[#e8182c]/10 pointer-events-none" />
           <div className="flex items-start gap-4">
-            <span className="material-symbols-outlined text-[#e8182c] shrink-0 mt-1 select-none font-bold text-3xl">format_quote</span>
+            <Quote className="w-8 h-8 text-[#e8182c] shrink-0 mt-1" />
             <div>
               <p className="font-accent-italic text-xl text-[#1c1b1b] dark:text-[#fcf9f8] leading-relaxed italic mb-2">
                 "{affirmation}"

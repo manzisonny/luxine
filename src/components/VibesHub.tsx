@@ -19,6 +19,27 @@ const SOUNDSCAPES = [
   { id: 4, title: "Shadows of Venice", artist: "Venezia Nocturne Quartet", duration: "5:12" }
 ];
 
+const WATCHLIST_KEY = "luxine_watchlist_v1";
+
+const SEED_WATCHLIST: WatchListItem[] = [
+  { id: "w1", title: "The Crown", platform: "Netflix", type: "show", status: "watched", rating: 5, notes: "Season 5" },
+  { id: "w2", title: "Succession", platform: "HBO Max", type: "show", status: "watching", rating: 4, notes: "Finale Prep" },
+  { id: "w3", title: "Dune: Part Two", platform: "Theater", type: "movie", status: "want_to_watch", rating: 5, notes: "Cinema Release" }
+];
+
+function loadWatchlist(): WatchListItem[] {
+  try {
+    const stored = localStorage.getItem(WATCHLIST_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  localStorage.setItem(WATCHLIST_KEY, JSON.stringify(SEED_WATCHLIST));
+  return SEED_WATCHLIST;
+}
+
+function saveWatchlist(list: WatchListItem[]) {
+  try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list)); } catch {}
+}
+
 export default function VibesHub() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
@@ -55,18 +76,10 @@ export default function VibesHub() {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  const fetchWatchlist = async () => {
-    try {
-      const res = await fetch("/api/watchlist");
-      if (res.ok) {
-        const data = await res.json();
-        setWatchlist(data.watchlist);
-      }
-    } catch (err) {
-      console.error("Error loaded watchlist vibes", err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchWatchlist = () => {
+    const loaded = loadWatchlist();
+    setWatchlist(loaded);
+    setLoading(false);
   };
 
   const currentTrack = SOUNDSCAPES[currentTrackIdx];
@@ -91,84 +104,45 @@ export default function VibesHub() {
     setCurrentTrackIdx((prev) => (prev === 0 ? SOUNDSCAPES.length - 1 : prev - 1));
   };
 
-  const handleAddWatchSubmit = async (e: React.FormEvent) => {
+  const handleAddWatchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newPlatform.trim()) return;
-
     setSavingProgress(true);
-
-    try {
-      const res = await fetch("/api/watchlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          platform: newPlatform.trim(),
-          type: newType,
-          status: newStatus,
-          rating: newRating,
-          notes: newNotes.trim()
-        })
-      });
-
-      if (res.ok) {
-        const newlyAdded = await res.json();
-        setWatchlist((prev) => [...prev, newlyAdded]);
-        setShowAddWatch(false);
-        // Reset Creator
-        setNewTitle("");
-        setNewPlatform("");
-        setNewNotes("");
-        setNewRating(5);
-      }
-    } catch (err) {
-      console.error("Error writing media log", err);
-    } finally {
+    setTimeout(() => {
+      const newItem: WatchListItem = {
+        id: "w_" + Date.now(),
+        title: newTitle.trim(),
+        platform: newPlatform.trim(),
+        type: newType,
+        status: newStatus,
+        rating: newRating,
+        notes: newNotes.trim()
+      };
+      const updated = [...watchlist, newItem];
+      setWatchlist(updated);
+      saveWatchlist(updated);
+      setShowAddWatch(false);
+      setNewTitle(""); setNewPlatform(""); setNewNotes(""); setNewRating(5);
       setSavingProgress(false);
-    }
+    }, 400);
   };
 
-  const handleStatusUpdate = async (id: string, newStat: "want_to_watch" | "watching" | "watched") => {
-    try {
-      const res = await fetch(`/api/watchlist/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStat })
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setWatchlist((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      }
-    } catch (error) {
-      console.error("Error updating status watchlist", error);
-    }
+  const handleStatusUpdate = (id: string, newStat: "want_to_watch" | "watching" | "watched") => {
+    const updated = watchlist.map((item) => item.id === id ? { ...item, status: newStat } : item);
+    setWatchlist(updated);
+    saveWatchlist(updated);
   };
 
-  const handleRatingUpdate = async (id: string, rating: number) => {
-    try {
-      const res = await fetch(`/api/watchlist/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating })
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setWatchlist((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      }
-    } catch (error) {
-      console.error("Error updating watchlist rating", error);
-    }
+  const handleRatingUpdate = (id: string, rating: number) => {
+    const updated = watchlist.map((item) => item.id === id ? { ...item, rating } : item);
+    setWatchlist(updated);
+    saveWatchlist(updated);
   };
 
-  const handleDeleteItem = async (id: string) => {
-    try {
-      const res = await fetch(`/api/watchlist/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setWatchlist((prev) => prev.filter((item) => item.id !== id));
-      }
-    } catch (error) {
-      console.error("Error deleting logs", error);
-    }
+  const handleDeleteItem = (id: string) => {
+    const updated = watchlist.filter((item) => item.id !== id);
+    setWatchlist(updated);
+    saveWatchlist(updated);
   };
 
   return (

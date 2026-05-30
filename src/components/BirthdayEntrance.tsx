@@ -25,7 +25,8 @@ export default function BirthdayEntrance({ onComplete }: BirthdayEntranceProps) 
 
   return (
     <motion.div
-      className="fixed inset-0 bg-[#fcf9f8] dark:bg-[#0f0507] z-[999] flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[999] flex flex-col items-center justify-center overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
     >

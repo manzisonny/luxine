@@ -7,6 +7,7 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+/* ─── LIGHT MODE (default) ─── */
 :root {
   --bg-primary: #fcf9f8;
   --bg-secondary: #fff5f5;
@@ -25,6 +26,7 @@
   --shadow-strong: rgba(232, 24, 44, 0.15);
 }
 
+/* ─── DARK MODE ─── */
 .dark {
   --bg-primary: #0f0507;
   --bg-secondary: #180a0c;
@@ -43,12 +45,32 @@
   --shadow-strong: rgba(232, 24, 44, 0.4);
 }
 
+/* ─── BASE BODY ─── */
+html {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
   transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow-x: hidden;
+}
+
+/* ─── LIGHT MODE explicit page overrides ─── */
+.light body,
+html:not(.dark) body {
+  background-color: #fcf9f8;
+  color: #1c1b1b;
+}
+
+/* Cards and containers respect theme via vars */
+.card-bg {
+  background-color: var(--bg-card);
+  border-color: var(--border-pale);
 }
 
 /* Glassmorphism utility */
@@ -66,11 +88,13 @@ body {
   border: 1px solid rgba(232, 24, 44, 0.15);
 }
 
-/* Luxury Glow Red Button styling */
+/* ─── LUXURY GLOW RED BUTTON ─── */
 .luxine-glow-button {
   background: linear-gradient(180deg, var(--red-container) 0%, #b01221 100%);
   box-shadow: 0px 4px 18px var(--shadow-strong);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff;
+  cursor: pointer;
 }
 
 .luxine-glow-button:hover {
@@ -82,7 +106,20 @@ body {
   transform: translateY(0);
 }
 
-/* Elegant fonts */
+/* ─── THEME-AWARE CARD ─── */
+.theme-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-pale);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-card:hover {
+  background-color: var(--bg-card-hover);
+  border-color: rgba(232, 24, 44, 0.2);
+}
+
+/* ─── TYPOGRAPHY ─── */
 .font-accent-italic {
   font-family: "Cormorant Garamond", serif;
   font-style: italic;
@@ -99,7 +136,7 @@ body {
   font-weight: 500;
 }
 
-/* Custom Shake and Keyframe animation for access form */
+/* ─── ANIMATIONS ─── */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
@@ -110,7 +147,6 @@ body {
   animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-/* Metallic red text effect */
 .shimmer-text {
   background: linear-gradient(to right, #bd001d, #ffb3ae, #bd001d);
   background-size: 200% auto;
@@ -124,7 +160,7 @@ body {
   to { background-position: 200% center; }
 }
 
-/* Custom slider scrollbars hiding */
+/* Scrollbar hiding */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -143,7 +179,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Heart burst particle simulation coordinates */
+/* Heart burst particles */
 @keyframes heartBurstAnim {
   0% {
     transform: translate(0, 0) scale(1);
@@ -158,3 +194,14 @@ body {
 .heart-particle {
   animation: heartBurstAnim 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ─── EXPLICIT LIGHT MODE TAILWIND OVERRIDES ─── */
+/* Ensure Tailwind dark: variants work properly */
+html:not(.dark) .dark\:bg-\[\#0f0507\] { background-color: #fcf9f8 !important; }
+html:not(.dark) .dark\:bg-\[\#1E0D10\] { background-color: #ffffff !important; }
+html:not(.dark) .dark\:bg-\[\#180A0C\] { background-color: #fff5f5 !important; }
+html:not(.dark) .dark\:text-\[\#fcf9f8\] { color: #1c1b1b !important; }
+html:not(.dark) .dark\:text-\[\#ffb3ae\] { color: #bd001d !important; }
+html:not(.dark) .dark\:text-\[\#d8c1c4\] { color: #6c5a5d !important; }
+html:not(.dark) .dark\:border-red-950\/15 { border-color: rgba(232, 24, 44, 0.12) !important; }
+html:not(.dark) .dark\:border-red-950\/10 { border-color: rgba(232, 24, 44, 0.08) !important; }
