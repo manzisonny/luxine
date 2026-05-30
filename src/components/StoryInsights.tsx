@@ -15,34 +15,10 @@ const MILESTONES: Milestone[] = [
   {
     id: 1,
     date: "May 30, 2026",
-    title: "The Golden Birthday Universe Launch",
-    desc: "Happy birthday, Luxine! Today, this digital universe is handed over as an immortal, breathing memory capsule.",
-    details: "Built under specific design languages, showcasing her high-passion editorial images, custom Letters guestbook, and private Cinema Watchlist.",
+    title: "Ella's Golden Birthday Celebration 🎂",
+    desc: "Happy birthday, Ella! Today, this digital capsule goes live for friends, family, and loved ones to celebrate you.",
+    details: "A dedicated sanctuary built to host your memories, wishes, and links. Leave a message, add plans, and upload photos to curate her world.",
     category: "birthday"
-  },
-  {
-    id: 2,
-    date: "May 29, 2025",
-    title: "One Year Curation Core Completed",
-    desc: "A year of dedicated memories cataloged seamlessly across continents.",
-    details: "Milan runway shows, private fitting studios, and quiet seaside sunbaths compiled under the curated Space archive.",
-    category: "milestone"
-  },
-  {
-    id: 3,
-    date: "December 20, 2024",
-    title: "First Milan Editorial Campaign",
-    desc: "Luxine coordinates the aesthetic profile for a high-end Milan apparel shoot.",
-    details: "This signature look integrated deep blood-red velvet accents and dramatic shadows, giving birth to the brand themes you celebrate today.",
-    category: "career"
-  },
-  {
-    id: 4,
-    date: "January 10, 2024",
-    title: "Seeds Planted: Initial Digital Blueprint",
-    desc: "First thoughts of compiling a private digital home of pure high fidelity design are written down.",
-    details: "A beautiful rebellion against standard commercial feed clutter—curating an honest, protected sanctuary.",
-    category: "personal"
   }
 ];
 
