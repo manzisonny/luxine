@@ -156,7 +156,7 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
                 placeholder="e.g. Sarah Jenkins"
-                className="w-full bg-[#fcf9f8] dark:bg-[#150709] border border-[#FFE4E4]/80 dark:border-red-950/50 px-4 py-3 rounded-xl font-sans text-sm text-[#1c1b1b] dark:text-[#fcf9f8] placeholder:text-[#926e6b]/45 focus:border-[#e8182c] dark:focus:border-[#ffb3ae] focus:ring-1 focus:ring-[#e8182c] outline-none transition-all"
+                className="w-full bg-white dark:bg-[#150709] border border-[#d88c88] dark:border-red-950/70 px-4 py-3 rounded-xl font-sans text-sm text-black dark:text-[#fcf9f8] placeholder:text-[#926e6b]/60 focus:border-[#bd001d] focus:ring-2 focus:ring-[#bd001d]/20 outline-none transition-all shadow-inner"
               />
             </div>
             
@@ -166,7 +166,7 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
                   type="checkbox"
                   checked={isSpecial}
                   onChange={(e) => setIsSpecial(e.target.checked)}
-                  className="rounded border-[#FFE4E4]/80 dark:border-red-950/50 text-[#e8182c] focus:ring-[#e8182c] w-4 h-4 cursor-pointer"
+                  className="rounded border-[#d88c88] dark:border-red-950/50 text-[#e8182c] focus:ring-[#e8182c] w-4 h-4 cursor-pointer"
                 />
                 Mark as Special Message ✦
               </label>
@@ -183,7 +183,7 @@ export default function MessagesGuestbook({ isAdmin, visitorId }: MessagesGuestb
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What beautiful memory or wish would you like to share?"
-              className="w-full bg-[#fcf9f8] dark:bg-[#150709] border border-[#FFE4E4]/80 dark:border-red-950/50 px-4 py-3 rounded-xl font-sans text-sm text-[#1c1b1b] dark:text-[#fcf9f8] placeholder:text-[#926e6b]/45 focus:border-[#e8182c] dark:focus:border-[#ffb3ae] focus:ring-1 focus:ring-[#e8182c] outline-none transition-all resize-none leading-relaxed"
+              className="w-full bg-white dark:bg-[#150709] border border-[#d88c88] dark:border-red-950/70 px-4 py-3 rounded-xl font-sans text-sm text-black dark:text-[#fcf9f8] placeholder:text-[#926e6b]/60 focus:border-[#bd001d] focus:ring-2 focus:ring-[#bd001d]/20 outline-none transition-all resize-none leading-relaxed shadow-inner"
             />
           </div>
 

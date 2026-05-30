@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Sparkles, Image, MessageSquare, Phone, Calendar, BookOpen, Quote, ChevronRight } from "lucide-react";
+import { Sparkles, Image, MessageSquare, Phone, Calendar, BookOpen, Quote, ChevronRight, Camera, Star } from "lucide-react";
 
 interface HomeDashboardProps {
   onNavigate: (tab: "home" | "space" | "messages" | "plans" | "story" | "contact") => void;
@@ -22,12 +22,11 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     luxineMood: "Glowing",
     luxineMoodEmoji: "✨"
   });
-  const [affirmation, setAffirmation] = useState("");
+  const [profilePic, setProfilePic] = useState<string>("");
   const [latestMedia, setLatestMedia] = useState<any>(null);
   const [latestMsg, setLatestMsg] = useState<any>(null);
   const [nextEvent, setNextEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [imgError, setImgError] = useState(false);
 
   // Time-aware greeting logic
   useEffect(() => {
@@ -46,33 +45,15 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     fetchData();
   }, []);
 
-  const AFFIRMATIONS_LIST = [
-    "You don't enter rooms, Luxine — you elevate them.",
-    "The world became more interesting the moment you arrived in it.",
-    "Your softness is not weakness. It is your most powerful currency.",
-    "There is a particular kind of magic that belongs only to you.",
-    "Every shadow you cast only highlights the radiance of your path.",
-    "You carry an elegant universe inside yourself, Luxine.",
-    "Your curation of moments is pure visual poetry.",
-    "In a world of noise, your silent composure is an absolute masterpiece.",
-    "Luxine, your presence is an exquisite work of digital and tactile art.",
-    "You turn ordinary moments into breathtaking memories.",
-    "Never dim your fire, Luxine. The world needs your passionate red glow.",
-    "The world celebrates Iriza Ella Luxine — timeless, rare, and deeply loved.",
-    "Your artistic spirit breathes warmth into every blank canvas.",
-    "May your birthday season bring you closer to the absolute heights of your potential.",
-    "Today and every day, you are an absolute vision of elite craftsmanship."
-  ];
-
   const fetchData = () => {
     try {
       // 1. Mood from localStorage
       const storedMood = localStorage.getItem("luxine_mood_v1");
       if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
 
-      // 2. Daily affirmation (deterministic by day)
-      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000);
-      setAffirmation(AFFIRMATIONS_LIST[dayOfYear % AFFIRMATIONS_LIST.length]);
+      // 2. Profile picture from localStorage
+      const storedPic = localStorage.getItem("luxine_profile_picture_v1");
+      if (storedPic) setProfilePic(storedPic);
 
       // 3. Latest media from localStorage
       const storedMedia = localStorage.getItem("luxine_media_v1");
@@ -99,6 +80,18 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      setProfilePic(src);
+      localStorage.setItem("luxine_profile_picture_v1", src);
+    };
+    reader.readAsDataURL(file);
   };
 
   const MOOD_OPTIONS = [
@@ -128,7 +121,6 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     { label: "Contact", tab: "contact" as const, desc: "Connect with Ella", icon: Phone, color: "text-purple-600" }
   ];
 
-  // Motion stagger variants
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -142,6 +134,9 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
   };
 
+  // Safe fallback source for latest media graphic thumbnail
+  const fallbackMediaUrl = profilePic || "https://images.unsplash.com/photo-1549417229-aa67d3263c09?w=300&auto=format&fit=crop&q=80";
+
   return (
     <motion.div
       variants={containerVariants}
@@ -153,32 +148,45 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#FFE4E4]/30 dark:border-red-950/20 pb-6">
         <div>
           <h1 className="font-serif text-3xl md:text-5xl font-bold italic text-[#bd001d] dark:text-[#ffb3ae] mb-2">
-            {greeting}, Luxine
+            {greeting} ✦ Welcome to Ella's World
           </h1>
           <p className="font-sans text-xs tracking-wider uppercase font-medium text-[#926e6b] dark:text-[#926e6b]/80">
-            {currentDateStr} · You are currently <span className="font-bold text-[#e8182c]">{settings.luxineMoodEmoji} {settings.luxineMood}</span>
+            {currentDateStr} · Ella is feeling <span className="font-bold text-[#e8182c]">{settings.luxineMoodEmoji} {settings.luxineMood}</span>
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {!imgError ? (
-            <img
-              alt="Ella's Portrait"
-              className="w-14 h-14 rounded-full object-cover object-top border-2 border-[#e8182c]/30 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md cursor-pointer hover:scale-105 transition-transform"
-              src="/ella/IMG_6486.JPG.jpeg"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-xl flex items-center justify-center border-2 border-white ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md cursor-pointer hover:scale-105 transition-transform">
-              E
+        
+        {/* Editable profile avatar photo picker */}
+        <div className="flex items-center gap-3 shrink-0">
+          <input
+            type="file"
+            id="profile-upload-dash"
+            accept="image/*"
+            onChange={handleProfileUpload}
+            className="hidden"
+          />
+          <label htmlFor="profile-upload-dash" className="cursor-pointer relative group block" title="Upload Ella's Photo">
+            {profilePic ? (
+              <img
+                alt="Ella's Portrait"
+                className="w-16 h-16 rounded-full object-cover border-2 border-[#e8182c]/40 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md group-hover:scale-105 transition-transform"
+                src={profilePic}
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-2xl flex items-center justify-center border-2 border-white ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md group-hover:scale-105 transition-transform">
+                E
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="w-5 h-5 text-white" />
             </div>
-          )}
+          </label>
         </div>
       </motion.div>
 
       {/* 2. Interactive Mood Panel */}
       <motion.div variants={itemVariants} className={`rounded-2xl p-6 shadow-[0px_10px_30px_rgba(232,24,44,0.03)] border ${theme === 'dark' ? 'bg-[#1E0D10] border-red-950/10' : 'bg-white border-[#FFE4E4]/30'}`}>
         <h3 className="font-sans text-sm font-bold tracking-wider text-[#1c1b1b] dark:text-[#fcf9f8] mb-1">
-          {isAdmin ? "Set Your Vibe For Today" : "Luxine's Mood Tracker"}
+          {isAdmin ? "Set Your Vibe For Today" : "Ella's Mood Tracker"}
         </h3>
         <p className="font-sans text-xs text-[#926e6b] mb-4">
           {isAdmin ? "Express your energy levels with Italian flare." : "A window into her current feelings. Pure and raw."}
@@ -204,21 +212,31 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
         </div>
       </motion.div>
 
-      {/* 3. Daily Quotes / Rotating Affirmations */}
-      {affirmation && (
-        <motion.div variants={itemVariants} className="bg-gradient-to-r from-[#FFF5F5] to-white dark:from-[#1E0D10] dark:to-[#180A0C] rounded-2xl p-8 relative overflow-hidden border-l-4 border-[#e8182c] shadow-sm">
-          <Quote className="absolute right-6 top-4 w-20 h-20 text-[#e8182c]/10 pointer-events-none" />
-          <div className="flex items-start gap-4">
-            <Quote className="w-8 h-8 text-[#e8182c] shrink-0 mt-1" />
-            <div>
-              <p className="font-accent-italic text-xl text-[#1c1b1b] dark:text-[#fcf9f8] leading-relaxed italic mb-2">
-                "{affirmation}"
+      {/* 3. Heavenly Birthday Blessing / Growth in Christ */}
+      <motion.div variants={itemVariants} className="bg-gradient-to-r from-amber-50/50 via-[#FFF5F5] to-white dark:from-red-950/20 dark:via-[#1E0D10] dark:to-[#180A0C] rounded-2xl p-6 md:p-8 relative overflow-hidden border border-[#e8182c]/20 dark:border-red-950/50 shadow-md">
+        <Sparkles className="absolute right-6 top-4 w-20 h-20 text-[#e8182c]/10 pointer-events-none" />
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-red-100 dark:bg-red-950/60 rounded-full text-[#e8182c] shrink-0">
+            <Star className="w-6 h-6 fill-current animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-[#bd001d] dark:text-[#ffb3ae]">
+              Heavenly Birthday Blessing
+            </h4>
+            <p className="font-serif text-lg md:text-xl text-[#1c1b1b] dark:text-[#fcf9f8] leading-relaxed italic font-semibold">
+              "But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To Him be glory both now and forever! Amen."
+            </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#FFE4E4]/20">
+              <span className="font-label-mono text-[10px] font-bold text-[#e8182c] bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-md shrink-0 w-fit">
+                2 Peter 3:18 · Growth in Christ
+              </span>
+              <p className="font-sans text-xs text-[#926e6b] dark:text-[#d8c1c4] italic leading-relaxed">
+                May your birthday be filled with spiritual growth, deep blessings, and radiant joy! ✦
               </p>
-              <span className="font-label-mono text-[10px] text-[#926e6b]">Daily whisper for Luxine</span>
             </div>
           </div>
-        </motion.div>
-      )}
+        </div>
+      </motion.div>
 
       {/* 4. Quick Launch Modules Grid */}
       <motion.div variants={itemVariants} className="space-y-4">
@@ -257,16 +275,17 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
             className="bg-white dark:bg-[#1E0D10] rounded-2xl p-5 border border-[#FFE4E4]/30 dark:border-red-950/10 shadow-[0px_4px_15px_rgba(232,24,44,0.02)] hover:shadow-md cursor-pointer flex items-center gap-4 group transition-shadow duration-300"
           >
             <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-[#FFF5F5] dark:bg-[#180A0C] border border-[#FFE4E4]/15">
-              {latestMedia ? (
-                <img src={latestMedia.url} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center"><Image className="w-5 h-5 text-[#926e6b]" /></div>
-              )}
+              <img
+                src={latestMedia ? latestMedia.url : fallbackMediaUrl}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                alt="Latest Space visual"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <span className="font-label-mono text-[9px] text-[#e8182c] font-bold">Latest Space upload</span>
               <p className="font-sans text-sm font-bold text-[#1c1b1b] dark:text-[#fcf9f8] truncate">
-                {latestMedia ? latestMedia.caption : "Explore her items"}
+                {latestMedia ? latestMedia.caption : "Memories Sandbox"}
               </p>
               <span className="font-sans text-[11px] text-[#926e6b] flex items-center mt-1">Review items <ChevronRight className="w-3 h-3 block" /></span>
             </div>

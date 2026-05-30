@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
-import { MessageSquare, Phone, Instagram, Send, ExternalLink, Globe } from "lucide-react";
+import { MessageSquare, Phone, Instagram, Send, ExternalLink, Globe, Mail } from "lucide-react";
 
 interface ContactDetailsProps {
   theme?: "light" | "dark";
@@ -36,6 +36,15 @@ export default function ContactDetails({ theme = "dark" }: ContactDetailsProps) 
       color: "from-black via-gray-900 to-teal-500",
       glow: "rgba(20, 184, 166, 0.2)",
       description: "Watch her latest trends and updates"
+    },
+    {
+      name: "Email Address",
+      handle: "luxineiriza@gmail.com",
+      url: "mailto:luxineiriza@gmail.com",
+      icon: Mail,
+      color: "from-[#bd001d] to-[#e8182c]",
+      glow: "rgba(232, 24, 44, 0.2)",
+      description: "Send official messages or direct greetings"
     }
   ];
 
@@ -52,7 +61,7 @@ export default function ContactDetails({ theme = "dark" }: ContactDetailsProps) 
       </div>
 
       {/* Grid of luxury social link cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {socialLinks.map((social, index) => {
           const Icon = social.icon;
           return (
