@@ -190,11 +190,47 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
     if (!file) return;
     const isVideo = file.type.startsWith("video");
     setUploadType(isVideo ? "video" : "photo");
+    
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const src = ev.target?.result as string;
-      setPreviewSrc(src);
-      setUploadUrl(src);
+      const base64Src = ev.target?.result as string;
+      if (isVideo) {
+        setPreviewSrc(base64Src);
+        setUploadUrl(base64Src);
+      } else {
+        // Compress photo to save localStorage quota (5MB limit)
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 900;
+          const MAX_HEIGHT = 900;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Get optimized base64 string
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.75);
+          setPreviewSrc(compressedDataUrl);
+          setUploadUrl(compressedDataUrl);
+        };
+        img.src = base64Src;
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -592,6 +628,9 @@ export default function SpaceGallery({ isAdmin, visitorId, theme = "dark" }: Spa
                         Remove & pick another
                       </button>
                     )}
+                    <p className="font-sans text-[11px] text-[#bd001d] dark:text-[#ffb3ae] bg-[#FFF5F5] dark:bg-red-950/30 p-3.5 rounded-xl leading-relaxed font-semibold mt-2">
+                      💡 Important note for video uploads: Browser localStorage restricts file sizes. If your video is too large, it might not persist. We highly recommend using the "From URL" option instead and pasting a direct public link (e.g. from Google Drive or OneDrive) to ensure it works for everyone!
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-1">

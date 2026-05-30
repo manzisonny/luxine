@@ -205,3 +205,24 @@ html:not(.dark) .dark\:text-\[\#ffb3ae\] { color: #bd001d !important; }
 html:not(.dark) .dark\:text-\[\#d8c1c4\] { color: #6c5a5d !important; }
 html:not(.dark) .dark\:border-red-950\/15 { border-color: rgba(232, 24, 44, 0.12) !important; }
 html:not(.dark) .dark\:border-red-950\/10 { border-color: rgba(232, 24, 44, 0.08) !important; }
+
+/* Global high-contrast overrides for inputs, textareas and selects */
+input[type="text"], input[type="url"], input[type="date"], input[type="email"], textarea, select {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 2px solid #bd001d !important;
+}
+.dark input[type="text"], .dark input[type="url"], .dark input[type="date"], .dark input[type="email"], .dark textarea, .dark select {
+  color: #ffffff !important;
+  background-color: #150709 !important;
+  border: 1px solid rgba(255, 179, 174, 0.4) !important;
+}
+/* Ensure placeholders are visible */
+input::placeholder, textarea::placeholder {
+  color: #8c7375 !important;
+  opacity: 0.8 !important;
+}
+.dark input::placeholder, .dark textarea::placeholder {
+  color: #d8c1c4 !important;
+  opacity: 0.5 !important;
+}

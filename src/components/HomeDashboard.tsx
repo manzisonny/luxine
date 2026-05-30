@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import { Sparkles, Image, MessageSquare, Phone, Calendar, BookOpen, Quote, ChevronRight, Camera, Star } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Sparkles, Image, MessageSquare, Phone, Calendar, BookOpen, Quote, ChevronRight, Star, X } from "lucide-react";
 
 interface HomeDashboardProps {
   onNavigate: (tab: "home" | "space" | "messages" | "plans" | "story" | "contact") => void;
@@ -27,6 +27,7 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
   const [latestMsg, setLatestMsg] = useState<any>(null);
   const [nextEvent, setNextEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [zoomAvatar, setZoomAvatar] = useState(false);
 
   // Time-aware greeting logic
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
       const storedMood = localStorage.getItem("luxine_mood_v1");
       if (storedMood) { const m = JSON.parse(storedMood); setSettings(m); }
 
-      // 2. Profile picture from localStorage
+      // 2. Profile picture from localStorage (preserved, never modified/removed by model)
       const storedPic = localStorage.getItem("luxine_profile_picture_v1");
       if (storedPic) setProfilePic(storedPic);
 
@@ -80,18 +81,6 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const src = ev.target?.result as string;
-      setProfilePic(src);
-      localStorage.setItem("luxine_profile_picture_v1", src);
-    };
-    reader.readAsDataURL(file);
   };
 
   const MOOD_OPTIONS = [
@@ -155,31 +144,25 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
           </p>
         </div>
         
-        {/* Editable profile avatar photo picker */}
+        {/* Profile avatar - click to zoom (no change camera overlays or files upload) */}
         <div className="flex items-center gap-3 shrink-0">
-          <input
-            type="file"
-            id="profile-upload-dash"
-            accept="image/*"
-            onChange={handleProfileUpload}
-            className="hidden"
-          />
-          <label htmlFor="profile-upload-dash" className="cursor-pointer relative group block" title="Upload Ella's Photo">
+          <button
+            onClick={() => setZoomAvatar(true)}
+            className="relative block rounded-full focus:outline-none cursor-pointer"
+            title="Click to view full photo"
+          >
             {profilePic ? (
               <img
                 alt="Ella's Portrait"
-                className="w-16 h-16 rounded-full object-cover border-2 border-[#e8182c]/40 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md group-hover:scale-105 transition-transform"
+                className="w-16 h-16 rounded-full object-cover border-2 border-[#e8182c]/40 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md hover:scale-105 transition-transform"
                 src={profilePic}
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-2xl flex items-center justify-center border-2 border-white ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-2xl flex items-center justify-center border-2 border-white ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md hover:scale-105 transition-transform">
                 E
               </div>
             )}
-            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="w-5 h-5 text-white" />
-            </div>
-          </label>
+          </button>
         </div>
       </motion.div>
 
@@ -212,25 +195,25 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
         </div>
       </motion.div>
 
-      {/* 3. Heavenly Birthday Blessing / Growth in Christ */}
-      <motion.div variants={itemVariants} className="bg-gradient-to-r from-amber-50/50 via-[#FFF5F5] to-white dark:from-red-950/20 dark:via-[#1E0D10] dark:to-[#180A0C] rounded-2xl p-6 md:p-8 relative overflow-hidden border border-[#e8182c]/20 dark:border-red-950/50 shadow-md">
+      {/* 3. Heavenly Birthday Blessing / Growth in Christ - EXTREMELY high-contrast in Light Mode */}
+      <motion.div variants={itemVariants} className="bg-white dark:bg-[#1E0D10] rounded-2xl p-6 md:p-8 relative overflow-hidden border-2 border-[#bd001d] dark:border-red-950/50 shadow-md">
         <Sparkles className="absolute right-6 top-4 w-20 h-20 text-[#e8182c]/10 pointer-events-none" />
         <div className="flex items-start gap-4">
-          <div className="p-3 bg-red-100 dark:bg-red-950/60 rounded-full text-[#e8182c] shrink-0">
+          <div className="p-3 bg-red-100 dark:bg-red-950/60 rounded-full text-[#bd001d] dark:text-[#ffb3ae] shrink-0">
             <Star className="w-6 h-6 fill-current animate-pulse" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 w-full">
             <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-[#bd001d] dark:text-[#ffb3ae]">
               Heavenly Birthday Blessing
             </h4>
-            <p className="font-serif text-lg md:text-xl text-[#1c1b1b] dark:text-[#fcf9f8] leading-relaxed italic font-semibold">
+            <p className="font-serif text-lg md:text-xl text-black dark:text-white leading-relaxed italic font-bold">
               "But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To Him be glory both now and forever! Amen."
             </p>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#FFE4E4]/20">
-              <span className="font-label-mono text-[10px] font-bold text-[#e8182c] bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-md shrink-0 w-fit">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#FFE4E4]/40 dark:border-red-950/20">
+              <span className="font-label-mono text-[10px] font-bold text-[#bd001d] dark:text-[#ffb3ae] bg-[#FFF5F5] dark:bg-red-950/40 px-2.5 py-1 rounded-md shrink-0 w-fit">
                 2 Peter 3:18 · Growth in Christ
               </span>
-              <p className="font-sans text-xs text-[#926e6b] dark:text-[#d8c1c4] italic leading-relaxed">
+              <p className="font-sans text-xs text-gray-900 dark:text-[#d8c1c4] italic leading-relaxed">
                 May your birthday be filled with spiritual growth, deep blessings, and radiant joy! ✦
               </p>
             </div>
@@ -326,6 +309,41 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
           </div>
         </div>
       </motion.div>
+
+      {/* Zoom Avatar Lightbox Modal */}
+      <AnimatePresence>
+        {zoomAvatar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-md z-[120] flex flex-col items-center justify-center p-4"
+          >
+            <button
+              onClick={() => setZoomAvatar(false)}
+              className="absolute top-6 right-6 z-[130] text-white hover:text-[#e8182c] bg-white/10 hover:bg-white/20 p-2 rounded-full cursor-pointer transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="relative max-w-full max-h-[80vh] flex flex-col items-center">
+              {profilePic ? (
+                <img 
+                  src={profilePic} 
+                  className="max-w-full max-h-[75vh] object-contain rounded-2xl border border-white/10 shadow-2xl" 
+                  alt="Ella's Portrait" 
+                />
+              ) : (
+                <div className="w-64 h-64 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-7xl flex items-center justify-center border-4 border-white shadow-2xl">
+                  E
+                </div>
+              )}
+              <h2 className="font-serif italic text-2xl text-white mt-4 tracking-wide text-center">
+                Iriza Ella Luxine ✦
+              </h2>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
