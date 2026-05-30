@@ -18,12 +18,62 @@ const kvClient = useKV ? createClient({ url: kvUrl, token: kvToken }) : null;
 // In-memory cache fallback for development when writing to file fails on read-only environments
 let localDbCache: any = null;
 
+function cleanLegacyData(db: any) {
+  if (!db) return { db, modified: false };
+  let modified = false;
+
+  // Clear legacy mock media
+  if (db.media && Array.isArray(db.media)) {
+    const originalLen = db.media.length;
+    db.media = db.media.filter((m: any) => !["m1", "m2", "m3"].includes(m.id));
+    if (db.media.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock comments
+  if (db.mediaComments && Array.isArray(db.mediaComments)) {
+    const originalLen = db.mediaComments.length;
+    db.mediaComments = db.mediaComments.filter(
+      (c: any) => !["c1", "c2", "c3"].includes(c.id) && !["m1", "m2", "m3"].includes(c.mediaId)
+    );
+    if (db.mediaComments.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock messages
+  if (db.messages && Array.isArray(db.messages)) {
+    const originalLen = db.messages.length;
+    db.messages = db.messages.filter((m: any) => !["msg1", "msg2", "msg3", "msg4", "msg5"].includes(m.id));
+    if (db.messages.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock events
+  if (db.events && Array.isArray(db.events)) {
+    const originalLen = db.events.length;
+    db.events = db.events.filter((e: any) => !["ev1", "ev2", "ev3", "ev4", "ev5"].includes(e.id));
+    if (db.events.length !== originalLen) modified = true;
+  }
+
+  // Clear watchlist items (deprecated)
+  if (db.watchlist && Array.isArray(db.watchlist)) {
+    if (db.watchlist.length > 0) {
+      db.watchlist = [];
+      modified = true;
+    }
+  }
+
+  return { db, modified };
+}
+
 async function getDb(): Promise<any> {
   if (useKV && kvClient) {
     try {
       const data = await kvClient.get("luxine_db_v2");
       if (data) {
-        return typeof data === "string" ? JSON.parse(data) : data;
+        let parsed = typeof data === "string" ? JSON.parse(data) : data;
+        const { db: cleaned, modified } = cleanLegacyData(parsed);
+        if (modified) {
+          await kvClient.set("luxine_db_v2", cleaned);
+        }
+        return cleaned;
       }
     } catch (err) {
       console.error("Vercel KV Read error:", err);
@@ -35,7 +85,12 @@ async function getDb(): Promise<any> {
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, "utf-8");
-      localDbCache = JSON.parse(data);
+      let parsed = JSON.parse(data);
+      const { db: cleaned, modified } = cleanLegacyData(parsed);
+      localDbCache = cleaned;
+      if (modified) {
+        try { fs.writeFileSync(DB_PATH, JSON.stringify(cleaned, null, 2)); } catch {}
+      }
       return localDbCache;
     }
   } catch (err) {

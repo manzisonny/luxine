@@ -15,28 +15,7 @@ interface FunnyStory {
 
 const STORIES_KEY = "luxine_funny_stories_v1";
 
-const SEED_STORIES: FunnyStory[] = [
-  {
-    id: "fs1",
-    author: "Sonny",
-    content: "The time Ella spent 45 minutes finding the absolute perfect selfie lighting in a grocery store vegetable aisle while the ice cream melted in the cart. Standard diva behavior! 😂",
-    category: "diva",
-    laughsCount: 42,
-    omgsCount: 12,
-    snapsCount: 28,
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString()
-  },
-  {
-    id: "fs2",
-    author: "Marcella",
-    content: "Ella texted us 'I'm 5 minutes away, girls!' when she hadn't even got in the shower yet. We waited for 2 hours at the restaurant. But she arrived looking so breathtakingly gorgeous we couldn't even be mad! 💅🔥",
-    category: "roast",
-    laughsCount: 56,
-    omgsCount: 8,
-    snapsCount: 61,
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
-  }
-];
+const SEED_STORIES: FunnyStory[] = [];
 
 function loadStories(): FunnyStory[] {
   try {

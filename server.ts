@@ -13,17 +13,67 @@ const DB_PATH = path.join(process.cwd(), "db.json");
 
 app.use(express.json());
 
+function cleanLegacyData(db: any) {
+  if (!db) return { db, modified: false };
+  let modified = false;
+
+  // Clear legacy mock media
+  if (db.media && Array.isArray(db.media)) {
+    const originalLen = db.media.length;
+    db.media = db.media.filter((m: any) => !["m1", "m2", "m3"].includes(m.id));
+    if (db.media.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock comments
+  if (db.mediaComments && Array.isArray(db.mediaComments)) {
+    const originalLen = db.mediaComments.length;
+    db.mediaComments = db.mediaComments.filter(
+      (c: any) => !["c1", "c2", "c3"].includes(c.id) && !["m1", "m2", "m3"].includes(c.mediaId)
+    );
+    if (db.mediaComments.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock messages
+  if (db.messages && Array.isArray(db.messages)) {
+    const originalLen = db.messages.length;
+    db.messages = db.messages.filter((m: any) => !["msg1", "msg2", "msg3", "msg4", "msg5"].includes(m.id));
+    if (db.messages.length !== originalLen) modified = true;
+  }
+
+  // Clear legacy mock events
+  if (db.events && Array.isArray(db.events)) {
+    const originalLen = db.events.length;
+    db.events = db.events.filter((e: any) => !["ev1", "ev2", "ev3", "ev4", "ev5"].includes(e.id));
+    if (db.events.length !== originalLen) modified = true;
+  }
+
+  // Clear watchlist items (deprecated)
+  if (db.watchlist && Array.isArray(db.watchlist)) {
+    if (db.watchlist.length > 0) {
+      db.watchlist = [];
+      modified = true;
+    }
+  }
+
+  return { db, modified };
+}
+
 // Helpers to read/write persistent JSON DB
 function readDb() {
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      const { db: cleaned, modified } = cleanLegacyData(parsed);
+      if (modified) {
+        try { fs.writeFileSync(DB_PATH, JSON.stringify(cleaned, null, 2), "utf-8"); } catch {}
+      }
+      return cleaned;
     }
   } catch (err) {
     console.error("Error reading db.json, falling back to empty database", err);
   }
-  return { settings: {}, media: [], mediaComments: [], mediaLikes: [], messages: [], messageLikes: [], events: [], moodLogs: [], watchlist: [] };
+  return { settings: {}, media: [], mediaComments: [], mediaLikes: [], messages: [], messageLikes: [], events: [], moodLogs: [], watchlist: [], stories: [] };
 }
 
 function writeDb(data: any) {
