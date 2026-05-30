@@ -24,35 +24,16 @@ interface SpaceGalleryProps {
 const MEDIA_KEY = "luxine_media_v1";
 
 // Ella's real photos (already in /public/ella/)
-const ELLA_SEED_MEDIA: Media[] = [
-  {
-    id: "ella_1",
-    url: "/ella/IMG_6486.JPG.jpeg",
-    type: "photo",
-    caption: "Ella ✨",
-    tags: ["Ella", "Moments"],
-    isFavourite: true,
-    likesCount: 0,
-    commentsCount: 0,
-    createdAt: "2026-05-22T12:09:03Z"
-  },
-  {
-    id: "ella_2",
-    url: "/ella/IMG_6929.JPG.jpeg",
-    type: "photo",
-    caption: "Beautiful day 🌹",
-    tags: ["Ella", "Vibes"],
-    isFavourite: true,
-    likesCount: 0,
-    commentsCount: 0,
-    createdAt: "2026-05-22T12:21:15Z"
-  }
-];
+const ELLA_SEED_MEDIA: Media[] = [];
 
 function loadMedia(): Media[] {
   try {
     const stored = localStorage.getItem(MEDIA_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Filter out legacy mock/seeded media files so they don't persist for the user
+      return parsed.filter((m: Media) => !m.id.startsWith("ella_"));
+    }
   } catch {}
   return ELLA_SEED_MEDIA;
 }

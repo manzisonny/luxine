@@ -19,19 +19,17 @@ interface PlansCalendarProps {
 
 const EVENTS_KEY = "luxine_events_v1";
 
-const SEED_EVENTS: CalendarEvent[] = [
-  { id: "ev1", title: "Iriza's Golden Celebration 🎂", description: "Birthday — Today the world celebrates her!", date: "2026-05-30", time: "00:00", type: "birthday", color: "primary", completed: false },
-  { id: "ev2", title: "Vogue Editorial Shoot", description: "Location: Studio 54, Manhattan", date: "2026-10-10", time: "10:00", type: "appointment", color: "primary", completed: false },
-  { id: "ev3", title: "Gala Fitting", description: "Location: Milan Boutique", date: "2026-10-10", time: "14:30", type: "special", color: "secondary", completed: false },
-  { id: "ev4", title: "Dinner with M.", description: "Reservation: Le Bernardin", date: "2026-10-10", time: "20:00", type: "dream", color: "tertiary", completed: false }
-];
+const SEED_EVENTS: CalendarEvent[] = [];
 
 function loadEvents(): CalendarEvent[] {
   try {
     const stored = localStorage.getItem(EVENTS_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Clean up legacy seeded mock events
+      return parsed.filter((e: CalendarEvent) => !["ev1", "ev2", "ev3", "ev4"].includes(e.id));
+    }
   } catch {}
-  localStorage.setItem(EVENTS_KEY, JSON.stringify(SEED_EVENTS));
   return SEED_EVENTS;
 }
 

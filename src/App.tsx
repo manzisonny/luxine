@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Moon, Sun, Unlock, Compass, Image, MessageSquare, Music, Calendar, BookOpen, Clock, Cake } from "lucide-react";
+import { Moon, Sun, Unlock, Compass, Image, MessageSquare, Music, Calendar, BookOpen, Clock, Cake, Phone } from "lucide-react";
 
 // Sub-components Imports
 import BirthdayEntrance from "./components/BirthdayEntrance";
@@ -8,7 +8,7 @@ import HomeDashboard from "./components/HomeDashboard";
 import SpaceGallery from "./components/SpaceGallery";
 import MessagesGuestbook from "./components/MessagesGuestbook";
 import PlansCalendar from "./components/PlansCalendar";
-import VibesHub from "./components/VibesHub";
+import ContactDetails from "./components/ContactDetails";
 import StoryInsights from "./components/StoryInsights";
 
 export default function App() {
@@ -16,7 +16,7 @@ export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   // Navigation
-  const [activeTab, setActiveTab] = useState<"home" | "space" | "messages" | "vibes" | "plans" | "story">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "space" | "messages" | "plans" | "story" | "contact">("home");
 
   // Birthday features state
   const [countdownStr, setCountdownStr] = useState("");
@@ -89,9 +89,9 @@ export default function App() {
     { key: "home" as const, label: "Home", icon: Compass },
     { key: "space" as const, label: "Her Space", icon: Image },
     { key: "messages" as const, label: "Guestbook", icon: MessageSquare },
-    { key: "vibes" as const, label: "Her Stage", icon: Music },
     { key: "plans" as const, label: "Plans", icon: Calendar },
-    { key: "story" as const, label: "Story", icon: BookOpen }
+    { key: "story" as const, label: "Story", icon: BookOpen },
+    { key: "contact" as const, label: "Contact", icon: Phone }
   ];
 
   return (
@@ -168,9 +168,9 @@ export default function App() {
               {activeTab === "messages" && (
                 <MessagesGuestbook isAdmin={true} visitorId={visitorId} />
               )}
-              {activeTab === "vibes" && <VibesHub />}
               {activeTab === "plans" && <PlansCalendar isAdmin={true} />}
               {activeTab === "story" && <StoryInsights />}
+              {activeTab === "contact" && <ContactDetails theme={theme} />}
             </motion.div>
           </AnimatePresence>
         </main>

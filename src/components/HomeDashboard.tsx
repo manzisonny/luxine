@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Sparkles, Image, MessageSquare, Music, Calendar, BookOpen, Quote, ChevronRight } from "lucide-react";
+import { Sparkles, Image, MessageSquare, Phone, Calendar, BookOpen, Quote, ChevronRight } from "lucide-react";
 
 interface HomeDashboardProps {
-  onNavigate: (tab: "home" | "space" | "messages" | "vibes" | "plans" | "story") => void;
+  onNavigate: (tab: "home" | "space" | "messages" | "plans" | "story" | "contact") => void;
   isAdmin: boolean;
   theme?: "light" | "dark";
 }
@@ -27,6 +27,7 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
   const [latestMsg, setLatestMsg] = useState<any>(null);
   const [nextEvent, setNextEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   // Time-aware greeting logic
   useEffect(() => {
@@ -122,9 +123,9 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
   const quickLaunchItems = [
     { label: "Her Space", tab: "space" as const, desc: "Moments & Media", icon: Image, color: "text-[#e8182c]" },
     { label: "Guestbook", tab: "messages" as const, desc: "Words from friends", icon: MessageSquare, color: "text-amber-600" },
-    { label: "Her Stage", tab: "vibes" as const, desc: "Soundscapes & Watchlists", icon: Music, color: "text-purple-600" },
     { label: "Plans", tab: "plans" as const, desc: "Calendar Encounters", icon: Calendar, color: "text-emerald-600" },
-    { label: "Story", tab: "story" as const, desc: "Timeline & Memory Grid", icon: BookOpen, color: "text-blue-500" }
+    { label: "Story", tab: "story" as const, desc: "Timeline & Memory Grid", icon: BookOpen, color: "text-blue-500" },
+    { label: "Contact", tab: "contact" as const, desc: "Connect with Ella", icon: Phone, color: "text-purple-600" }
   ];
 
   // Motion stagger variants
@@ -159,12 +160,18 @@ export default function HomeDashboard({ onNavigate, isAdmin, theme = "dark" }: H
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <img
-            alt="Ella's Portrait"
-            className="w-14 h-14 rounded-full object-cover object-top border-2 border-[#e8182c]/30 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md"
-            src="/ella/IMG_6486.JPG.jpeg"
-            onError={(e) => { (e.target as HTMLImageElement).src = '/ella/IMG_6929.JPG.jpeg'; }}
-          />
+          {!imgError ? (
+            <img
+              alt="Ella's Portrait"
+              className="w-14 h-14 rounded-full object-cover object-top border-2 border-[#e8182c]/30 ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md cursor-pointer hover:scale-105 transition-transform"
+              src="/ella/IMG_6486.JPG.jpeg"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#bd001d] to-[#e8182c] text-white font-serif font-bold text-xl flex items-center justify-center border-2 border-white ring-4 ring-[#FFF5F5] dark:ring-red-950/20 shadow-md cursor-pointer hover:scale-105 transition-transform">
+              E
+            </div>
+          )}
         </div>
       </motion.div>
 
