@@ -1,23 +1,27 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
-import { kv } from "@vercel/kv";
+import { createClient } from "@vercel/kv";
 
 const app = express();
 app.use(express.json());
 
 const DB_PATH = path.join(process.cwd(), "db.json");
 
-// Helper to check if Vercel KV is connected
-const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+// Supports both legacy Vercel KV env variables and new Upstash Redis marketplace variables
+const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const useKV = !!(kvUrl && kvToken);
+
+const kvClient = useKV ? createClient({ url: kvUrl, token: kvToken }) : null;
 
 // In-memory cache fallback for development when writing to file fails on read-only environments
 let localDbCache: any = null;
 
 async function getDb(): Promise<any> {
-  if (useKV) {
+  if (useKV && kvClient) {
     try {
-      const data = await kv.get("luxine_db_v2");
+      const data = await kvClient.get("luxine_db_v2");
       if (data) {
         return typeof data === "string" ? JSON.parse(data) : data;
       }
@@ -56,9 +60,9 @@ async function getDb(): Promise<any> {
 
 async function saveDb(data: any): Promise<void> {
   localDbCache = data;
-  if (useKV) {
+  if (useKV && kvClient) {
     try {
-      await kv.set("luxine_db_v2", data);
+      await kvClient.set("luxine_db_v2", data);
       return;
     } catch (err) {
       console.error("Vercel KV Write error:", err);
